@@ -1,0 +1,318 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../supabaseClient';
+import { logActivity } from '../../utils/activityLogger';
+import { CustomTimeSelect, CustomDatePicker } from './CustomFormControls';
+
+interface Service {
+  id: number;
+  name: string;
+  duration_minutes: number;
+  price: number;
+}
+
+interface Barber {
+  id: number;
+  name: string;
+  is_active: boolean;
+}
+
+interface CreateAppointmentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+  initialDate: Date;
+  initialTime: string;
+  barbers: Barber[];
+  services: Service[];
+}
+
+export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
+  isOpen,
+  onClose,
+  onCreated,
+  initialDate,
+  initialTime,
+  barbers,
+  services,
+}) => {
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [selectedServiceId, setSelectedServiceId] = useState<number | ''>('');
+  const [selectedBarberId, setSelectedBarberId] = useState<number | ''>('');
+  const [dateString, setDateString] = useState('');
+  const [timeString, setTimeString] = useState('10:00');
+  const [status, setStatus] = useState<'Pending' | 'Confirmed'>('Confirmed');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const now = new Date();
+  const todayY = now.getFullYear();
+  const todayM = String(now.getMonth() + 1).padStart(2, '0');
+  const todayD = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${todayY}-${todayM}-${todayD}`;
+
+  const currentH = now.getHours().toString().padStart(2, '0');
+  const currentMin = now.getMinutes().toString().padStart(2, '0');
+  const currentTimeStr = `${currentH}:${currentMin}`;
+
+  const convertTo24h = (timeStr: string): string => {
+    if (!timeStr) return '10:00';
+    if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+    let clean = timeStr.trim();
+    const isPM = clean.toUpperCase().includes('PM');
+    const isAM = clean.toUpperCase().includes('AM');
+    clean = clean.replace(/(AM|PM)/i, '').trim();
+    const parts = clean.split(':');
+    let h = parseInt(parts[0], 10) || 0;
+    let m = parseInt(parts[1] || '0', 10) || 0;
+    if (isPM && h < 12) h += 12;
+    if (isAM && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerEmail('');
+      setErrorMsg(null);
+      
+      if (services.length > 0) setSelectedServiceId(services[0].id);
+      if (barbers.length > 0) setSelectedBarberId(barbers[0].id);
+
+      // Format date YYYY-MM-DD for date input (prevent past date)
+      const year = initialDate.getFullYear();
+      const month = String(initialDate.getMonth() + 1).padStart(2, '0');
+      const day = String(initialDate.getDate()).padStart(2, '0');
+      const calcDate = `${year}-${month}-${day}`;
+      const targetDate = calcDate < todayStr ? todayStr : calcDate;
+      setDateString(targetDate);
+
+      const parsedTime = convertTo24h(initialTime || '10:00 AM');
+      if (targetDate === todayStr && parsedTime < currentTimeStr) {
+        // Find next future 15m slot
+        let h = now.getHours();
+        let m = Math.ceil(now.getMinutes() / 15) * 15;
+        if (m >= 60) { h += 1; m = 0; }
+        const adjustedTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        setTimeString(adjustedTime);
+      } else {
+        setTimeString(parsedTime);
+      }
+    }
+  }, [isOpen, initialDate, initialTime, services, barbers, todayStr, currentTimeStr]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerName.trim() || !customerPhone.trim() || !selectedServiceId || !selectedBarberId) {
+      setErrorMsg('Please fill out all required fields.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg(null);
+
+    try {
+      const parts = timeString.split(':');
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1] || '0', 10);
+
+      const [y, m, d] = dateString.split('-').map(Number);
+      const scheduledDate = new Date(y, m - 1, d, hours, minutes, 0);
+
+      if (scheduledDate < new Date()) {
+        setErrorMsg('Cannot schedule appointments in the past.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const isoDateTime = scheduledDate.toISOString();
+
+      // Check or create customer
+      let { data: customer, error: custErr } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('phone', customerPhone.trim())
+        .maybeSingle();
+
+      if (custErr) throw custErr;
+      let customerId = customer?.id;
+
+      if (!customerId) {
+        const { data: newCustomer, error: newCustErr } = await supabase
+          .from('customers')
+          .insert({
+            name: customerName.trim(),
+            phone: customerPhone.trim(),
+            email: customerEmail.trim() || null
+          })
+          .select('id')
+          .single();
+
+        if (newCustErr) throw newCustErr;
+        customerId = newCustomer.id;
+      }
+
+      // Insert appointment
+      const { error: apptErr } = await supabase
+        .from('appointments')
+        .insert({
+          customer_id: customerId,
+          barber_id: selectedBarberId,
+          service_id: selectedServiceId,
+          appointment_date: isoDateTime,
+          status: status
+        });
+
+      if (apptErr) throw apptErr;
+
+      const sName = services.find(s => s.id === Number(selectedServiceId))?.name || 'Service';
+      const bName = barbers.find(b => b.id === Number(selectedBarberId))?.name || 'Barber';
+      await logActivity('booking', 'appointment', `Admin booked appointment for ${customerName.trim()} (${sName} with ${bName})`, 'Admin');
+
+      onCreated();
+      onClose();
+    } catch (err: any) {
+      console.error('Create appointment error:', err);
+      setErrorMsg(err.message || 'Failed to create appointment');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const minTimeForSelect = dateString === todayStr ? currentTimeStr : undefined;
+
+  return (
+    <div className="admin-modal-overlay" onClick={onClose}>
+      <div className="admin-modal-card create-appointment-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="admin-modal-header">
+          <h3>New Appointment</h3>
+          <button type="button" className="modal-close-btn" onClick={onClose}>&times;</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="admin-modal-form">
+          {errorMsg && <div className="admin-form-error">{errorMsg}</div>}
+
+          <div className="form-section-title">Customer Information</div>
+
+          <div className="form-group-row">
+            <div className="form-group">
+              <label>Customer Name *</label>
+              <input
+                type="text"
+                required
+                placeholder="Jose Rizal"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Customer Phone *</label>
+              <input
+                type="tel"
+                required
+                placeholder="e.g. 09171234567"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group-row">
+            <div className="form-group">
+              <label>Customer Email (Optional)</label>
+              <input
+                type="email"
+                placeholder="e.g. client@example.com"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Initial Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as 'Pending' | 'Confirmed')}
+              >
+                <option value="Confirmed">Confirmed</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-section-title">Booking Schedule</div>
+
+          <div className="form-group-row">
+            <div className="form-group">
+              <label>Service *</label>
+              <select
+                value={selectedServiceId}
+                onChange={(e) => setSelectedServiceId(Number(e.target.value))}
+                required
+              >
+                {services.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} (₱{s.price})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Assigned Barber *</label>
+              <select
+                value={selectedBarberId}
+                onChange={(e) => setSelectedBarberId(Number(e.target.value))}
+                required
+              >
+                {barbers.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-group-row">
+            <CustomDatePicker
+              label="Date"
+              value={dateString}
+              onChange={(val) => {
+                setDateString(val);
+                if (val === todayStr && timeString < currentTimeStr) {
+                  let h = now.getHours();
+                  let m = Math.ceil(now.getMinutes() / 15) * 15;
+                  if (m >= 60) { h += 1; m = 0; }
+                  setTimeString(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+                }
+              }}
+              required
+              minDate={todayStr}
+            />
+
+            <CustomTimeSelect
+              label="Time Slot"
+              value={timeString}
+              onChange={(val) => setTimeString(val)}
+              required
+              minTime={minTimeForSelect}
+            />
+          </div>
+
+          <div className="admin-modal-actions">
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Appointment'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

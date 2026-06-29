@@ -1,0 +1,645 @@
+import { useState, useEffect } from 'react';
+import { supabase } from './supabaseClient';
+import { BookingWizard } from './client/components/BookingWizard';
+import { BookingTracker } from './client/components/BookingTracker';
+import { TeamShowcase } from './client/components/TeamShowcase';
+import { ClientHeader } from './client/components/ClientHeader';
+import { CustomerLogin } from './client/pages/CustomerLogin';
+import { CustomerSignup } from './client/pages/CustomerSignup';
+import { CustomerProfile } from './client/pages/CustomerProfile';
+import { AdminLogin } from './admin/pages/AdminLogin';
+import { AdminDashboard } from './admin/pages/AdminDashboard';
+import { AdminAppointments } from './admin/pages/AdminAppointments';
+import { AdminServices } from './admin/pages/AdminServices';
+import { AdminBarbers } from './admin/pages/AdminBarbers';
+import { AdminCustomers } from './admin/pages/AdminCustomers';
+import { AdminProfile } from './admin/pages/AdminProfile';
+import { AdminActivityLog } from './admin/pages/AdminActivityLog';
+import { AdminReports } from './admin/pages/AdminReports';
+import { logActivity } from './utils/activityLogger';
+import { validateSlotAvailability } from './utils/bookingRules';
+import '../styles.css';
+
+interface Service {
+  id: number;
+  name: string;
+  duration_minutes: number;
+  price: number;
+  description: string;
+  image_url: string;
+  category_name: string;
+}
+
+interface Barber {
+  id: number;
+  name: string;
+  is_active: boolean;
+  shift_start: string;
+  shift_end: string;
+  working_days: string[];
+  image_url?: string | null;
+  notes?: string | null;
+}
+
+interface CustomerUser {
+  id: number;
+  name: string;
+  phone: string;
+  email: string | null;
+}
+
+type ViewType =
+  | 'booking'
+  | 'tracker'
+  | 'customer-login'
+  | 'customer-signup'
+  | 'customer-profile'
+  | 'admin-login'
+  | 'admin-dashboard'
+  | 'admin-appointments'
+  | 'admin-services'
+  | 'admin-barbers'
+  | 'admin-customers'
+  | 'admin-activity'
+  | 'admin-reports'
+  | 'admin-profile';
+
+export interface SystemUser {
+  id: number;
+  username: string;
+  role: 'admin' | 'barber';
+  barber_id?: number | null;
+}
+
+function App() {
+  const [view, setView] = useState<ViewType>('booking');
+  const [services, setServices] = useState<Service[]>([]);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const [systemUser, setSystemUser] = useState<SystemUser | null>(() => {
+    const stored = sessionStorage.getItem('fbs_system_user');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return null;
+      }
+    }
+    if (sessionStorage.getItem('fbs_admin_auth') === 'true') {
+      return { id: 1, username: 'admin', role: 'admin' };
+    }
+    return null;
+  });
+
+  const [customerUser, setCustomerUser] = useState<CustomerUser | null>(() => {
+    const stored = sessionStorage.getItem('fbs_customer_user');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const handleAdminLoginSuccess = (user: SystemUser) => {
+    setSystemUser(user);
+    sessionStorage.setItem('fbs_system_user', JSON.stringify(user));
+  };
+
+  const handleAdminLogout = () => {
+    setSystemUser(null);
+    sessionStorage.removeItem('fbs_system_user');
+    sessionStorage.removeItem('fbs_admin_auth');
+  };
+
+  const handleCustomerLoginSuccess = (user: CustomerUser) => {
+    setCustomerUser(user);
+    sessionStorage.setItem('fbs_customer_user', JSON.stringify(user));
+    window.location.hash = '#/profile';
+    setView('customer-profile');
+  };
+
+  const handleUpdateCustomerUser = (updatedUser: CustomerUser) => {
+    setCustomerUser(updatedUser);
+    sessionStorage.setItem('fbs_customer_user', JSON.stringify(updatedUser));
+  };
+
+  const handleCustomerLogout = () => {
+    setCustomerUser(null);
+    sessionStorage.removeItem('fbs_customer_user');
+    window.location.hash = '#/login';
+    window.location.reload();
+  };
+
+  // Parse location hash on mount and change with RBAC guards
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+
+      if (hash === '#/admin/login') {
+        if (systemUser) {
+          window.location.hash = '#/admin/dashboard';
+          setView('admin-dashboard');
+        } else {
+          setView('admin-login');
+        }
+      } else if (hash === '#/admin/appointments') {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-appointments');
+        }
+      } else if (hash === '#/admin/services') {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-services');
+        }
+      } else if (hash === '#/admin/barbers') {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-barbers');
+        }
+      } else if (hash === '#/admin/customers') {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-customers');
+        }
+      } else if (hash === '#/admin/activity') {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-activity');
+        }
+      } else if (hash === '#/admin/reports') {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-reports');
+        }
+      } else if (hash === '#/admin/profile') {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-profile');
+        }
+      } else if (hash === '#/admin' || hash === '#/admin/dashboard' || hash.startsWith('#/admin/')) {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-dashboard');
+        }
+      } else if (hash === '#/login' || hash === '#login') {
+        if (customerUser) {
+          window.location.hash = '#/profile';
+          setView('customer-profile');
+        } else {
+          setView('customer-login');
+        }
+      } else if (hash === '#/signup' || hash === '#signup') {
+        if (customerUser) {
+          window.location.hash = '#/profile';
+          setView('customer-profile');
+        } else {
+          setView('customer-signup');
+        }
+      } else if (hash === '#/profile' || hash === '#profile') {
+        if (!customerUser) {
+          window.location.hash = '#/login';
+          setView('customer-login');
+        } else {
+          setView('customer-profile');
+        }
+      } else if (hash.startsWith('#/track') || hash === '#track') {
+        setView('tracker');
+      } else {
+        setView('booking');
+
+        const targetId = hash.replace('#', '');
+        if (targetId && targetId !== '/track' && targetId !== '/login' && targetId !== '/signup' && targetId !== '/profile') {
+          setTimeout(() => {
+            const element = document.getElementById(targetId);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 100);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [systemUser, customerUser]);
+
+  // Fetch static data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { data: servicesData, error: servicesErr } = await supabase
+          .from('services')
+          .select('id, name, duration_minutes, price, description, image_url, category_name');
+        if (servicesErr) throw servicesErr;
+        setServices(servicesData || []);
+
+        const { data: barbersData, error: barbersErr } = await supabase
+          .from('barbers')
+          .select('id, name, is_active, shift_start, shift_end, working_days, image_url, notes')
+          .eq('is_active', true);
+        if (barbersErr) throw barbersErr;
+        setBarbers(barbersData || []);
+      } catch (e) {
+        console.error('Error loading data from Supabase:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState<boolean>(false);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+    setTimeout(() => {
+      setToastVisible(false);
+    }, 2500);
+  };
+
+  const copyShareUrl = () => {
+    const shareUrl = window.location.origin + window.location.pathname;
+    const triggerSuccess = () => showToast('Booking link copied to clipboard!');
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(triggerSuccess)
+      .catch(() => {
+        const dummy = document.createElement('input');
+        document.body.appendChild(dummy);
+        dummy.value = shareUrl;
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        triggerSuccess();
+      });
+  };
+
+  const saveAppointment = async (bookingData: {
+    service: Service;
+    barber: Barber;
+    date: Date;
+    time: string;
+    fullName: string;
+    phone: string;
+    email: string;
+    emailReminder: boolean;
+  }) => {
+    try {
+      const { service, barber, date, time, fullName, phone, email } = bookingData;
+
+      const [timeStr, modifier] = time.split(' ');
+      let [hoursStr, minutesStr] = timeStr.split(':');
+      let hours = parseInt(hoursStr);
+      const minutes = parseInt(minutesStr);
+
+      if (modifier === 'PM' && hours < 12) {
+        hours += 12;
+      }
+      if (modifier === 'AM' && hours === 12) {
+        hours = 0;
+      }
+
+      const appointmentDate = new Date(date);
+      appointmentDate.setHours(hours, minutes, 0, 0);
+      const combinedDateTimeIsoString = appointmentDate.toISOString();
+
+      // Rule 3.1: Server-side slot re-validation guard
+      const isSlotFree = await validateSlotAvailability(
+        supabase,
+        barber.id,
+        service.duration_minutes,
+        combinedDateTimeIsoString
+      );
+
+      if (!isSlotFree) {
+        alert("Sorry, that slot was just taken. Please choose another time.");
+        return null;
+      }
+
+      let customerId = customerUser?.id;
+
+      if (!customerId) {
+        let customer = null;
+        const cleanPhone = phone ? phone.trim() : '';
+        const cleanEmail = email ? email.trim() : '';
+
+        if (cleanPhone) {
+          const { data, error } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('phone', cleanPhone)
+            .maybeSingle();
+          if (error) throw error;
+          customer = data;
+        } else if (cleanEmail) {
+          const { data, error } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('email', cleanEmail)
+            .maybeSingle();
+          if (error) throw error;
+          customer = data;
+        }
+
+        customerId = customer?.id;
+
+        if (!customerId) {
+          const { data: newCustomer, error: insertErr } = await supabase
+            .from('customers')
+            .insert({
+              name: fullName.trim(),
+              phone: cleanPhone || null,
+              email: cleanEmail || null,
+            })
+            .select('id')
+            .single();
+
+          if (insertErr) throw insertErr;
+          customerId = newCustomer.id;
+        }
+      }
+
+      const { data: appointment, error: apptErr } = await supabase
+        .from('appointments')
+        .insert({
+          customer_id: customerId,
+          barber_id: barber.id,
+          service_id: service.id,
+          appointment_date: combinedDateTimeIsoString,
+          status: 'Pending',
+        })
+        .select('id')
+        .single();
+
+      if (apptErr) {
+        // Handle potential unique index collision or constraint error
+        if (apptErr.code === '23505') {
+          alert("Sorry, that slot was just taken. Please choose another time.");
+          return null;
+        }
+        throw apptErr;
+      }
+
+      const bookingId = `FBS-${100000 + Number(appointment.id)}`;
+      await logActivity('booking', 'appointment', `New booking ${bookingId} for ${service.name} with ${barber.name}`, fullName);
+      return bookingId;
+    } catch (e) {
+      console.error('Save appointment error:', e);
+      return null;
+    }
+  };
+
+  const trackBooking = async (searchId: string) => {
+    try {
+      const idSequence = parseInt(searchId.toUpperCase().replace('FBS-', '')) - 100000;
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          appointment_date,
+          status,
+          customer:customers ( name, phone, email ),
+          barber:barbers ( name ),
+          service:services ( name, price )
+        `)
+        .eq('id', idSequence)
+        .single();
+
+      if (error) throw error;
+      if (!data) return null;
+
+      const rawCustomer: any = Array.isArray(data.customer) ? data.customer[0] : data.customer;
+      const rawBarber: any = Array.isArray(data.barber) ? data.barber[0] : data.barber;
+      const rawService: any = Array.isArray(data.service) ? data.service[0] : data.service;
+
+      return {
+        id: data.id,
+        appointment_date: data.appointment_date,
+        status: data.status,
+        customer: rawCustomer
+          ? {
+            name: rawCustomer.name,
+            phone: rawCustomer.phone,
+            email: rawCustomer.email,
+          }
+          : null,
+        barber: rawBarber ? { name: rawBarber.name } : null,
+        service: rawService ? { name: rawService.name, price: Number(rawService.price) } : null,
+      } as any;
+    } catch (e) {
+      console.error('Track booking error:', e);
+      return null;
+    }
+  };
+
+  const handleNavigate = (hash: string) => {
+    window.location.hash = hash;
+    if (hash === '#/track') {
+      setView('tracker');
+    } else if (hash === '#/login') {
+      setView('customer-login');
+    } else if (hash === '#/signup') {
+      setView('customer-signup');
+    } else if (hash === '#/profile') {
+      setView('customer-profile');
+    } else {
+      setView('booking');
+    }
+  };
+
+  if (view === 'admin-dashboard') {
+    return <AdminDashboard onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
+  if (view === 'admin-appointments') {
+    return <AdminAppointments onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
+  if (view === 'admin-services') {
+    return <AdminServices onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
+  if (view === 'admin-barbers') {
+    return <AdminBarbers onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
+  if (view === 'admin-customers') {
+    return <AdminCustomers onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
+  if (view === 'admin-activity') {
+    return <AdminActivityLog onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
+  if (view === 'admin-reports') {
+    return <AdminReports onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
+  if (view === 'admin-profile') {
+    return <AdminProfile onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
+  return (
+    <>
+      <ClientHeader
+        customerUser={customerUser}
+        currentView={view}
+        onNavigate={handleNavigate}
+        onLogout={handleCustomerLogout}
+        onShare={copyShareUrl}
+      />
+
+      <main className="main-wrapper">
+        <div className="main-container">
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '100px 0', color: 'var(--text-secondary)' }}>
+              <h3>Loading studio details...</h3>
+            </div>
+          ) : view === 'admin-login' ? (
+            <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />
+          ) : view === 'customer-login' ? (
+            <CustomerLogin onLoginSuccess={handleCustomerLoginSuccess} onNavigate={handleNavigate} />
+          ) : view === 'customer-signup' ? (
+            <CustomerSignup onSignupSuccess={handleCustomerLoginSuccess} onNavigate={handleNavigate} />
+          ) : view === 'customer-profile' && customerUser ? (
+            <CustomerProfile
+              customerUser={customerUser}
+              onNavigate={handleNavigate}
+              onUpdateCustomerUser={handleUpdateCustomerUser}
+            />
+          ) : view === 'booking' ? (
+            <>
+              <section id="services" className="page-section section-booking">
+                <BookingWizard
+                  services={services}
+                  barbers={barbers}
+                  customerUser={customerUser}
+                  onSaveAppointment={saveAppointment}
+                  onNavigate={handleNavigate}
+                />
+              </section>
+
+              <TeamShowcase barbers={barbers} />
+
+              <section id="about" className="page-section section-about">
+                <div className="section-container">
+                  <div className="about-grid">
+                    <div className="about-content">
+                      <h2 className="section-title">About Us</h2>
+                      <p className="about-desc">
+                        Foundry Barber Studio is a modern barbershop that offers professional grooming services for men, focusing on clean haircuts, fades, beard grooming, and a comfortable, stylish grooming experience. It is known for skilled barbers, attention to detail, and a relaxed studio-style atmosphere where clients can get a fresh, well-groomed look in a contemporary setting.
+                      </p>
+
+                      <div className="contact-block">
+                        <h3 className="contact-title">Contact Us</h3>
+                        <div className="contact-links">
+                          <a href="tel:09943543318" className="contact-link-item">
+                            <i className="bi bi-telephone-fill"></i>
+                            <span>0994 354 3318</span>
+                          </a>
+                          <a href="mailto:kesselgerhardt@gmail.com" className="contact-link-item">
+                            <i className="bi bi-envelope-fill"></i>
+                            <span>kesselgerhardt@gmail.com</span>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="about-media">
+                      <div className="about-frame">
+                        <img src="/images/logo.jpg" alt="Foundry Barber Studio Atmosphere" className="about-img" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section id="address" className="page-section section-address">
+                <div className="section-container">
+                  <div className="section-header">
+                    <h2 className="section-title">Address</h2>
+                    <p className="section-subtitle">Behind Pamantasan ng Cabuyao, Cabuyao City, Calabarzon 4024</p>
+                  </div>
+
+                  <div className="map-wrapper">
+                    <iframe
+                      className="google-map-iframe"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3867.728956972235!2d121.1219662758661!3d14.269986385966465!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d8c5208f654b%3A0xea8c792348505e60!2sPamantasan%20ng%20Cabuyao!5e0!3m2!1sen!2sph!4v1718791000000!5m2!1sen!2sph"
+                      allowFullScreen={true}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      style={{ border: 0 }}
+                    ></iframe>
+                  </div>
+                </div>
+              </section>
+
+              <section id="book-cta" className="page-section section-cta">
+                <div className="section-container">
+                  <div className="cta-card">
+                    <div className="cta-image-wrapper">
+                      <img src="/images/barbershop.jpg" alt="Foundry Barber Studio Barbershop" className="cta-img" />
+                    </div>
+                    <div className="cta-content">
+                      <div className="cta-badge">UPGRADE YOUR LOOK</div>
+                      <h2 className="cta-title">Ready for Your Fresh Cut?</h2>
+                      <p className="cta-desc">Experience premium grooming, classic craftsmanship, and high-precision fades. Step into Foundry Barber Studio today.</p>
+                      <button
+                        onClick={() => {
+                          handleNavigate('#services');
+                          window.location.hash = '#services';
+                          const el = document.getElementById('services');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="cta-button"
+                      >
+                        <span>Book Now</span>
+                        <i className="bi bi-arrow-right"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </>
+          ) : (
+            <BookingTracker onTrackBooking={trackBooking} />
+          )}
+        </div>
+      </main>
+
+      {toastMessage && (
+        <div className={`toast-notification ${toastVisible ? 'show' : ''}`}>
+          <i className="bi bi-check-circle-fill"></i>
+          <span>{toastMessage}</span>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default App;

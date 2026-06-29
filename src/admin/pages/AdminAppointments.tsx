@@ -210,7 +210,6 @@ export const AdminAppointments: React.FC<AdminAppointmentsProps> = ({ onLogout, 
           barber:barbers ( id, name ),
           service:services ( id, name, duration_minutes, price )
         `)
-        .eq('barber_id', appointment.barber.id)
         .in('status', ['Pending', 'Confirmed'])
         .neq('id', appointment.id);
 

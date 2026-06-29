@@ -165,6 +165,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
     setIsDetailOpen(true);
   };
 
+  const handleAppointmentDeleted = (deletedId: number) => {
+    setAppointments((prev) => prev.filter((a) => a.id !== deletedId));
+    fetchAppointments();
+  };
+
+  const handleAppointmentUpdated = (updatedAppt?: { id: number; status: string }) => {
+    if (updatedAppt) {
+      setAppointments((prev) =>
+        prev.map((a) => (a.id === updatedAppt.id ? { ...a, status: updatedAppt.status as any } : a))
+      );
+    }
+    fetchAppointments();
+  };
+
   const isToday = (d: Date) => {
     const today = new Date();
     return (
@@ -251,6 +265,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
                   // Find appointments on this day matching this hour slot
                   const slotAppts = appointments.filter((appt) => {
                     if (isBarber && appt.status !== 'Confirmed') return false;
+                    if (appt.status === 'Completed') return false;
 
                     const apptDate = new Date(appt.appointment_date);
                     const isSameDay =
@@ -342,7 +357,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
       <AppointmentDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        onUpdated={fetchAppointments}
+        onUpdated={handleAppointmentUpdated}
+        onDeleted={handleAppointmentDeleted}
         appointment={selectedAppointment}
         systemUser={systemUser}
       />

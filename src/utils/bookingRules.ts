@@ -102,10 +102,9 @@ export function generateAvailableSlots(
   const { hours: startH, minutes: startM } = parseTimeString(barber.shift_start);
   const { hours: endH, minutes: endM } = parseTimeString(barber.shift_end);
 
-  // Filter existing active appointments for this barber (Rule 2.3: Pending & Confirmed block slots)
+  // Filter existing active appointments studio-wide (Pending & Confirmed block slots globally)
   const activeAppts = existingAppointments.filter((app) => {
-    const isSameBarber = app.barber_id == null || app.barber_id === barber.id;
-    return isSameBarber && (app.status === 'Pending' || app.status === 'Confirmed');
+    return app.status === 'Pending' || app.status === 'Confirmed';
   });
 
   const availableSlots: string[] = [];
@@ -168,7 +167,7 @@ export function generateAvailableSlots(
  */
 export async function validateSlotAvailability(
   supabase: SupabaseClient,
-  barberId: number,
+  _barberId: number,
   serviceDurationMinutes: number,
   appointmentIsoString: string
 ): Promise<boolean> {
@@ -184,7 +183,6 @@ export async function validateSlotAvailability(
   const { data: appts, error } = await supabase
     .from('appointments')
     .select('id, appointment_date, status, service:services(duration_minutes)')
-    .eq('barber_id', barberId)
     .in('status', ['Pending', 'Confirmed'])
     .gte('appointment_date', minSearch)
     .lte('appointment_date', maxSearch);
@@ -229,7 +227,6 @@ export function scanPostAcceptConflicts(
     if (pDur <= 0) continue;
 
     const hasOverlap = confirmed.some((c) => {
-      if (c.barber_id !== p.barber_id) return false;
       const cDur = c.service?.duration_minutes || 0;
       if (cDur <= 0) return false;
       return doIntervalsOverlap(p.appointment_date, pDur, c.appointment_date, cDur);

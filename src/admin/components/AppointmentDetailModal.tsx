@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { logActivity } from '../../utils/activityLogger';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 import type { SystemUser } from '../../App';
 
@@ -29,15 +30,26 @@ export interface FullAppointment {
 interface AppointmentDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpdated: () => void;
+  onUpdated: (updatedAppt?: { id: number; status: string }) => void;
+  onDeleted?: (appointmentId: number) => void;
   appointment: FullAppointment | null;
   systemUser?: SystemUser | null;
+}
+
+interface ConfirmState {
+  type: 'status' | 'delete';
+  targetStatus?: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  title: string;
+  message: string;
+  confirmLabel: string;
+  confirmVariant: 'danger' | 'primary';
 }
 
 export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
   isOpen,
   onClose,
   onUpdated,
+  onDeleted,
   appointment,
   systemUser,
 }) => {
@@ -45,6 +57,7 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
   const [currentStatus, setCurrentStatus] = useState<'Pending' | 'Confirmed' | 'Completed' | 'Cancelled'>('Pending');
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
   useEffect(() => {
     if (appointment) {
@@ -66,63 +79,87 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
     hour12: true,
   });
 
-  const handleStatusUpdate = async (newStatus: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled') => {
+  const requestStatusChange = (newStatus: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled') => {
+    if (isBarber || currentStatus === newStatus) return;
+    const isDanger = newStatus === 'Cancelled';
+    const actionLabel = newStatus === 'Confirmed' ? 'Confirm' : newStatus === 'Completed' ? 'Complete' : 'Cancel';
+    setConfirmState({
+      type: 'status',
+      targetStatus: newStatus,
+      title: `${actionLabel} Appointment`,
+      message: `Are you sure you want to set this appointment status to ${newStatus}?`,
+      confirmLabel: actionLabel,
+      confirmVariant: isDanger ? 'danger' : 'primary',
+    });
+  };
+
+  const requestDelete = () => {
     if (isBarber) return;
+    setConfirmState({
+      type: 'delete',
+      title: 'Delete Appointment',
+      message: 'Are you sure you want to permanently delete this appointment? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      confirmVariant: 'danger',
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmState || !appointment) return;
     setIsSaving(true);
     setErrorMsg(null);
     try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: newStatus })
-        .eq('id', appointment.id);
+      if (confirmState.type === 'status' && confirmState.targetStatus) {
+        const newStatus = confirmState.targetStatus;
+        const { error } = await supabase
+          .from('appointments')
+          .update({ status: newStatus })
+          .eq('id', appointment.id);
 
-      if (error) throw error;
-      setCurrentStatus(newStatus);
-      const actionMap: Record<string, string> = {
-        'Confirmed': 'confirm',
-        'Completed': 'finish',
-        'Cancelled': 'cancel',
-      };
-      const actName = actionMap[newStatus] || newStatus.toLowerCase();
-      await logActivity(
-        actName,
-        'appointment',
-        `Updated appointment FBS-${100000 + appointment.id} status to ${newStatus}`,
-        systemUser?.username || 'Admin'
-      );
-      onUpdated();
+        if (error) throw error;
+        setCurrentStatus(newStatus);
+        const actionMap: Record<string, string> = {
+          'Confirmed': 'confirm',
+          'Completed': 'finish',
+          'Cancelled': 'cancel',
+        };
+        const actName = actionMap[newStatus] || newStatus.toLowerCase();
+        await logActivity(
+          actName,
+          'appointment',
+          `Updated appointment FBS-${100000 + appointment.id} status to ${newStatus}`,
+          systemUser?.username || 'Admin'
+        );
+        onUpdated({ id: appointment.id, status: newStatus });
+        if (newStatus === 'Completed') {
+          onClose();
+        }
+      } else if (confirmState.type === 'delete') {
+        const { error } = await supabase
+          .from('appointments')
+          .delete()
+          .eq('id', appointment.id);
+
+        if (error) throw error;
+        await logActivity(
+          'cancel',
+          'appointment',
+          `Deleted appointment FBS-${100000 + appointment.id}`,
+          systemUser?.username || 'Admin'
+        );
+        if (onDeleted) {
+          onDeleted(appointment.id);
+        } else {
+          onUpdated();
+        }
+        onClose();
+      }
     } catch (err: any) {
-      console.error('Update status error:', err);
-      setErrorMsg(err.message || 'Failed to update status');
+      console.error('Action execution error:', err);
+      setErrorMsg(err.message || 'Action failed');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (isBarber) return;
-    if (!window.confirm('Are you sure you want to delete this appointment?')) return;
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .delete()
-        .eq('id', appointment.id);
-
-      if (error) throw error;
-      await logActivity(
-        'cancel',
-        'appointment',
-        `Deleted appointment FBS-${100000 + appointment.id}`,
-        systemUser?.username || 'Admin'
-      );
-      onUpdated();
-      onClose();
-    } catch (err: any) {
-      console.error('Delete appointment error:', err);
-      setErrorMsg(err.message || 'Failed to delete appointment');
-    } finally {
-      setIsSaving(false);
+      setConfirmState(null);
     }
   };
 
@@ -200,7 +237,7 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
                   <button
                     type="button"
                     className={`status-opt-btn ${currentStatus === 'Confirmed' ? 'active' : ''}`}
-                    onClick={() => handleStatusUpdate('Confirmed')}
+                    onClick={() => requestStatusChange('Confirmed')}
                     disabled={isSaving}
                   >
                     Confirm
@@ -208,7 +245,7 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
                   <button
                     type="button"
                     className={`status-opt-btn ${currentStatus === 'Completed' ? 'active' : ''}`}
-                    onClick={() => handleStatusUpdate('Completed')}
+                    onClick={() => requestStatusChange('Completed')}
                     disabled={isSaving}
                   >
                     Complete
@@ -216,7 +253,7 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
                   <button
                     type="button"
                     className={`status-opt-btn danger ${currentStatus === 'Cancelled' ? 'active' : ''}`}
-                    onClick={() => handleStatusUpdate('Cancelled')}
+                    onClick={() => requestStatusChange('Cancelled')}
                     disabled={isSaving}
                   >
                     Cancel
@@ -229,7 +266,7 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
 
         <div className="admin-modal-actions space-between">
           {!isBarber ? (
-            <button type="button" className="btn-danger-link" onClick={handleDelete} disabled={isSaving}>
+            <button type="button" className="btn-danger-link" onClick={requestDelete} disabled={isSaving}>
               Delete Appointment
             </button>
           ) : <div />}
@@ -238,6 +275,17 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
           </button>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={!!confirmState}
+        title={confirmState?.title || ''}
+        message={confirmState?.message || ''}
+        confirmLabel={confirmState?.confirmLabel || 'Confirm'}
+        confirmVariant={confirmState?.confirmVariant || 'danger'}
+        isDeleting={isSaving}
+        onConfirm={handleConfirmAction}
+        onClose={() => setConfirmState(null)}
+      />
     </div>
   );
 };

@@ -5,6 +5,7 @@ interface ConfirmDeleteModalProps {
   title: string;
   message: string;
   confirmLabel?: string;
+  confirmVariant?: 'danger' | 'primary';
   isDeleting?: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -15,6 +16,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   title,
   message,
   confirmLabel = 'Delete',
+  confirmVariant = 'danger',
   isDeleting = false,
   onConfirm,
   onClose,
@@ -96,19 +98,19 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             type="button"
             className="btn-primary"
             style={{
-              background: '#ef4444',
-              borderColor: '#ef4444',
+              background: confirmVariant === 'primary' ? '#0f172a' : '#ef4444',
+              borderColor: confirmVariant === 'primary' ? '#0f172a' : '#ef4444',
               padding: '8px 18px',
               borderRadius: '6px',
               color: '#ffffff',
               fontWeight: 600,
               cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)',
+              boxShadow: confirmVariant === 'primary' ? '0 2px 4px rgba(15, 23, 42, 0.2)' : '0 2px 4px rgba(239, 68, 68, 0.2)',
             }}
             onClick={onConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : confirmLabel}
+            {isDeleting ? 'Processing...' : confirmLabel}
           </button>
         </div>
       </div>

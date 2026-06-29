@@ -108,12 +108,10 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
   const [existingAppointments, setExistingAppointments] = useState<ExistingAppointment[]>([]);
 
   const fetchBarberAppointments = useCallback(async () => {
-    if (!selectedStaff) return;
     try {
       const { data, error } = await supabase
         .from('appointments')
         .select('id, barber_id, appointment_date, status, service:services(duration_minutes)')
-        .eq('barber_id', selectedStaff.id)
         .in('status', ['Pending', 'Confirmed']);
 
       if (error) {
@@ -131,7 +129,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
     } catch (err) {
       console.error('Failed fetching appointments for slots:', err);
     }
-  }, [selectedStaff]);
+  }, []);
 
   useEffect(() => {
     if (step === 'time' && selectedStaff) {

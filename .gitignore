@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Environment & AI agent / tool metadata
+# Environment and tool 
 .env
 .env.*
 .agents

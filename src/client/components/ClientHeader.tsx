@@ -24,6 +24,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
   onShare,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +71,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
     e.preventDefault();
+    setMobileMenuOpen(false);
     const section = hash.replace('#', '');
     if (['services', 'team', 'about', 'address'].includes(section)) {
       setActiveSection(section);
@@ -91,7 +93,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
           </a>
         </div>
 
-        <nav className="nav-menu">
+        <nav className={`nav-menu${mobileMenuOpen ? ' mobile-open' : ''}`}>
           <a
             href="#services"
             className={`nav-item${currentView === 'booking' && activeSection === 'services' ? ' active' : ''}`}
@@ -131,10 +133,20 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
 
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <a href="tel:09943543318" className="action-phone">
-            <i className="bi bi-telephone"></i> 0994 354 3318
+            <i className="bi bi-telephone"></i> <span className="phone-text">0994 354 3318</span>
           </a>
           <button type="button" id="btnShare" className="btn-icon" onClick={onShare} title="Share booking link">
             <i className="bi bi-share"></i>
+          </button>
+
+          <button
+            type="button"
+            className="btn-icon nav-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            title="Toggle Menu"
+            aria-label="Toggle navigation menu"
+          >
+            <i className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
           </button>
 
           {customerUser ? (

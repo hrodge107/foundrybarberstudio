@@ -5675,6 +5675,139 @@ a {
     font-size: 1.1rem;
 }
 
+.nav-toggle {
+    display: none;
+}
+
+/* ==========================================================================
+   Mobile Responsiveness (Client App & Components)
+   ========================================================================== */
+@media (max-width: 768px) {
+    .nav-toggle {
+        display: flex;
+    }
+
+    .nav-menu {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 72px;
+        left: 0;
+        right: 0;
+        background: var(--bg-surface);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-primary);
+        box-shadow: var(--shadow-md);
+        gap: 16px;
+        z-index: 999;
+    }
+
+    .nav-menu.mobile-open {
+        display: flex;
+    }
+
+    .nav-item {
+        font-size: 1rem;
+        padding: 8px 0;
+    }
+
+    .main-wrapper {
+        margin-top: 72px;
+        padding: 24px 16px;
+    }
+
+    .booking-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .sidebar-card {
+        position: static;
+        top: auto;
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .step-panel {
+        padding: 20px 16px;
+        border-radius: 20px;
+    }
+
+    .step-header {
+        margin-bottom: 24px;
+    }
+
+    .step-title {
+        font-size: 1.35rem;
+    }
+
+    .datetime-picker-container {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .form-group-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .staff-grid {
+        grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+        gap: 14px;
+    }
+
+    .staff-card {
+        padding: 16px 12px;
+    }
+
+    .staff-avatar-circle {
+        width: 52px;
+        height: 52px;
+    }
+
+    .service-item-row {
+        padding: 16px;
+        gap: 14px;
+    }
+
+    .login-prompt-block {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 576px) {
+    .header-container {
+        padding: 0 16px;
+    }
+
+    .logo-text {
+        font-size: 1rem;
+    }
+
+    .phone-text {
+        display: none;
+    }
+
+    .action-phone {
+        padding: 8px;
+        border-radius: 50%;
+    }
+
+    .service-item-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .service-item-row .btn-book {
+        width: 100%;
+        margin-top: 8px;
+    }
+}
+
+
 
 
 

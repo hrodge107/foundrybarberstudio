@@ -391,7 +391,7 @@ export const AdminStoreHours: React.FC<AdminStoreHoursProps> = ({ onLogout, syst
                             value={h.open_time || '09:00'}
                             onChange={(val) => handleChange(h.day_of_week, 'open_time', val)}
                             disabled={!h.is_open}
-                            error={errorMessage && h.is_open && (!h.open_time || timeToMins(h.open_time) >= timeToMins(h.close_time))}
+                            error={!!errorMessage && h.is_open && (!h.open_time || timeToMins(h.open_time) >= timeToMins(h.close_time))}
                           />
                         </div>
 
@@ -403,7 +403,7 @@ export const AdminStoreHours: React.FC<AdminStoreHoursProps> = ({ onLogout, syst
                             value={h.close_time || '17:00'}
                             onChange={(val) => handleChange(h.day_of_week, 'close_time', val)}
                             disabled={!h.is_open}
-                            error={errorMessage && h.is_open && (!h.close_time || timeToMins(h.open_time) >= timeToMins(h.close_time))}
+                            error={!!errorMessage && h.is_open && (!h.close_time || timeToMins(h.open_time) >= timeToMins(h.close_time))}
                           />
                         </div>
                       </div>

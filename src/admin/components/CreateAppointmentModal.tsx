@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { logActivity } from '../../utils/activityLogger';
 import { CustomTimeSelect, CustomDatePicker } from './CustomFormControls';
+import { type StoreHour } from '../pages/AdminStoreHours';
 
 interface Service {
   id: number;
@@ -45,6 +46,13 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
   const [status, setStatus] = useState<'Pending' | 'Confirmed'>('Confirmed');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [storeHours, setStoreHours] = useState<StoreHour[]>([]);
+
+  const timeToMins = (t: string | null) => {
+    if (!t) return 0;
+    const parts = t.slice(0, 5).split(':');
+    return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+  };
 
   const now = new Date();
   const todayY = now.getFullYear();
@@ -77,6 +85,12 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
       setCustomerPhone('');
       setCustomerEmail('');
       setErrorMsg(null);
+
+      const fetchStoreHours = async () => {
+        const { data } = await supabase.from('store_hours').select('*');
+        if (data) setStoreHours(data);
+      };
+      fetchStoreHours();
       
       if (services.length > 0) setSelectedServiceId(services[0].id);
       if (barbers.length > 0) setSelectedBarberId(barbers[0].id);
@@ -109,6 +123,23 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
     e.preventDefault();
     if (!customerName.trim() || !customerPhone.trim() || !selectedServiceId || !selectedBarberId) {
       setErrorMsg('Please fill out all required fields.');
+      return;
+    }
+
+    const cleanPhone = customerPhone.trim();
+    if (!/^09\d{9}$/.test(cleanPhone)) {
+      setErrorMsg('Phone number must be exactly 11 digits starting with 09 (e.g., 09171234567).');
+      return;
+    }
+
+    const cleanEmail = customerEmail.trim();
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setErrorMsg('Please enter a valid email address.');
+      return;
+    }
+
+    if (storeHourError) {
+      setErrorMsg(storeHourError);
       return;
     }
 
@@ -183,6 +214,39 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
     }
   };
 
+  // Determine if the selected date and time fall outside store hours
+  let storeHourError: string | null = null;
+  if (dateString && timeString && storeHours.length > 0) {
+    const [y, m, d] = dateString.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayAbbr = daysMap[dateObj.getDay()];
+
+    const storeDay = storeHours.find((s) => s.day_of_week === dayAbbr);
+    if (!storeDay || !storeDay.is_open) {
+      const fullDayNames = {
+        'Sun': 'Sunday', 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday',
+        'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday'
+      } as any;
+      storeHourError = `The store is closed on ${fullDayNames[dayAbbr] || dayAbbr}.`;
+    } else {
+      const selectedMins = timeToMins(timeString);
+      const openMins = timeToMins(storeDay.open_time);
+      const closeMins = timeToMins(storeDay.close_time);
+      if (selectedMins < openMins || selectedMins >= closeMins) {
+        const formatTimeStr = (t: string | null) => {
+          if (!t) return '';
+          const [hStr, mStr] = t.split(':');
+          let h = parseInt(hStr, 10);
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+          return `${h}:${mStr.padStart(2, '0')} ${ampm}`;
+        };
+        storeHourError = `Selected time is outside store hours (${formatTimeStr(storeDay.open_time)} - ${formatTimeStr(storeDay.close_time)}).`;
+      }
+    }
+  }
+
   const minTimeForSelect = dateString === todayStr ? currentTimeStr : undefined;
 
   return (
@@ -195,6 +259,7 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
 
         <form onSubmit={handleSubmit} className="admin-modal-form">
           {errorMsg && <div className="admin-form-error">{errorMsg}</div>}
+          {storeHourError && <div className="admin-form-error">{storeHourError}</div>}
 
           <div className="form-section-title">Customer Information</div>
 
@@ -307,7 +372,7 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
             <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            <button type="submit" className="btn-primary" disabled={isSubmitting || !!storeHourError}>
               {isSubmitting ? 'Saving...' : 'Save Appointment'}
             </button>
           </div>

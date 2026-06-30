@@ -5,7 +5,7 @@ import { SidebarSummary } from './SidebarSummary';
 import { SidebarPlaceholder } from './SidebarPlaceholder';
 import { ConfirmationModal } from './ConfirmationModal';
 import { BookingCompletionModal } from './BookingCompletionModal';
-import { generateAvailableSlots, type BarberSchedule, type ExistingAppointment } from '../../utils/bookingRules';
+import { generateAvailableSlots, type BarberSchedule, type ExistingAppointment, type StoreHour } from '../../utils/bookingRules';
 
 interface Service {
   id: number;
@@ -31,6 +31,7 @@ interface CustomerUser {
 interface BookingWizardProps {
   services: Service[];
   barbers: Barber[];
+  storeHours: StoreHour[];
   customerUser?: CustomerUser | null;
   onNavigate?: (hash: string) => void;
   onSaveAppointment: (data: {
@@ -65,6 +66,7 @@ const HaircutSVG: React.FC = () => (
 export const BookingWizard: React.FC<BookingWizardProps> = ({
   services,
   barbers,
+  storeHours,
   customerUser,
   onNavigate,
   onSaveAppointment,
@@ -277,7 +279,8 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
       selectedStaff,
       selectedService,
       selectedDate,
-      existingAppointments
+      existingAppointments,
+      storeHours
     );
   };
 
@@ -439,7 +442,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
             <div className="datetime-picker-container">
               <div className="calendar-wrapper">
-                <Calendar selectedDate={selectedDate} onSelectDate={handleSelectDate} />
+                <Calendar selectedDate={selectedDate} onSelectDate={handleSelectDate} storeHours={storeHours} />
                 <div className="timezone-info">
                   <i className="bi bi-globe"></i> Manila (GMT+8)
                 </div>

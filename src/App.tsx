@@ -16,6 +16,7 @@ import { AdminCustomers } from './admin/pages/AdminCustomers';
 import { AdminProfile } from './admin/pages/AdminProfile';
 import { AdminActivityLog } from './admin/pages/AdminActivityLog';
 import { AdminReports } from './admin/pages/AdminReports';
+import { AdminStoreHours, type StoreHour } from './admin/pages/AdminStoreHours';
 import { logActivity } from './utils/activityLogger';
 import { validateSlotAvailability } from './utils/bookingRules';
 import '../styles.css';
@@ -62,7 +63,8 @@ type ViewType =
   | 'admin-customers'
   | 'admin-activity'
   | 'admin-reports'
-  | 'admin-profile';
+  | 'admin-profile'
+  | 'admin-store-hours';
 
 export interface SystemUser {
   id: number;
@@ -75,6 +77,7 @@ function App() {
   const [view, setView] = useState<ViewType>('booking');
   const [services, setServices] = useState<Service[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [storeHours, setStoreHours] = useState<StoreHour[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [systemUser, setSystemUser] = useState<SystemUser | null>(() => {
@@ -188,6 +191,13 @@ function App() {
         } else {
           setView('admin-reports');
         }
+      } else if (hash === '#/admin/settings') {
+        if (!systemUser) {
+          window.location.hash = '#/admin/login';
+          setView('admin-login');
+        } else {
+          setView('admin-store-hours');
+        }
       } else if (hash === '#/admin/profile') {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
@@ -262,6 +272,13 @@ function App() {
           .eq('is_active', true);
         if (barbersErr) throw barbersErr;
         setBarbers(barbersData || []);
+
+        const { data: storeHoursData, error: storeHoursErr } = await supabase
+          .from('store_hours')
+          .select('*');
+        if (!storeHoursErr && storeHoursData) {
+          setStoreHours(storeHoursData);
+        }
       } catch (e) {
         console.error('Error loading data from Supabase:', e);
       } finally {
@@ -505,6 +522,10 @@ function App() {
     return <AdminProfile onLogout={handleAdminLogout} systemUser={systemUser} />;
   }
 
+  if (view === 'admin-store-hours') {
+    return <AdminStoreHours onLogout={handleAdminLogout} systemUser={systemUser} />;
+  }
+
   return (
     <>
       <ClientHeader
@@ -539,6 +560,7 @@ function App() {
                 <BookingWizard
                   services={services}
                   barbers={barbers}
+                  storeHours={storeHours}
                   customerUser={customerUser}
                   onSaveAppointment={saveAppointment}
                   onNavigate={handleNavigate}

@@ -5,6 +5,7 @@ import { CreateAppointmentModal } from '../components/CreateAppointmentModal';
 import { AppointmentDetailModal, type FullAppointment } from '../components/AppointmentDetailModal';
 
 import type { SystemUser } from '../../App';
+import { type StoreHour } from './AdminStoreHours';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -26,6 +27,20 @@ interface Barber {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, systemUser }) => {
   const isBarber = systemUser?.role === 'barber';
+
+  const timeToMins = (t: string | null) => {
+    if (!t) return 0;
+    const parts = t.slice(0, 5).split(':');
+    return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+  };
+
+  const hourToMins = (hStr: string) => {
+    const [numStr, ampm] = hStr.split(' ');
+    let h = parseInt(numStr, 10);
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return h * 60;
+  };
   // Current 7-day span start date (Block 1 marks the current date by default)
   const [startDate, setStartDate] = useState<Date>(() => {
     const d = new Date();
@@ -36,6 +51,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
   const [appointments, setAppointments] = useState<FullAppointment[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [storeHours, setStoreHours] = useState<StoreHour[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Modals state
@@ -58,8 +74,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
   }, [startDate]);
 
   const hoursList = [
-    '8 AM', '9 AM', '10 AM', '11 AM', '12 PM',
-    '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM'
+    '6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM', '12 PM',
+    '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM',
+    '8 PM', '9 PM', '10 PM', '11 PM'
   ];
 
   // Fetch initial barbers and services
@@ -71,6 +88,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
 
         const { data: sData } = await supabase.from('services').select('id, name, duration_minutes, price');
         if (sData) setServices(sData);
+
+        const { data: shData } = await supabase.from('store_hours').select('*');
+        if (shData) setStoreHours(shData);
       } catch (err) {
         console.error('Error fetching static admin data:', err);
       }
@@ -106,6 +126,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
         if (systemUser?.barber_id) {
           query = query.eq('barber_id', systemUser.barber_id);
         }
+      } else {
+        query = query.in('status', ['Pending', 'Confirmed']);
       }
 
       const { data, error } = await query;
@@ -262,10 +284,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
               <div key={hour} className="grid-time-row">
                 <div className="time-label-cell">{hour}</div>
                 {weekDays.map((dayDate) => {
+                  const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                  const dayAbbr = daysMap[dayDate.getDay()];
+                  const storeDay = storeHours.find((s) => s.day_of_week === dayAbbr);
+
                   // Find appointments on this day matching this hour slot
+                  // ponytail: filter out completed and cancelled status (only show pending/confirmed)
                   const slotAppts = appointments.filter((appt) => {
-                    if (isBarber && appt.status !== 'Confirmed') return false;
-                    if (appt.status === 'Completed') return false;
+                    if (isBarber) {
+                      if (appt.status !== 'Confirmed') return false;
+                    } else {
+                      if (appt.status !== 'Pending' && appt.status !== 'Confirmed') return false;
+                    }
 
                     const apptDate = new Date(appt.appointment_date);
                     const isSameDay =
@@ -292,12 +322,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, system
                       {['00', '15', '30', '45'].map((mins) => {
                         const [hNum, ampm] = hour.split(' ');
                         const slotTimeStr = `${hNum}:${mins} ${ampm}`;
+                        const slotMins = hourToMins(hour) + parseInt(mins, 10);
+                        const storeOpenMins = storeDay ? timeToMins(storeDay.open_time) : 0;
+                        const storeCloseMins = storeDay ? timeToMins(storeDay.close_time) : 0;
+                        const isOutsideHours = !storeDay || !storeDay.is_open || slotMins < storeOpenMins || slotMins >= storeCloseMins;
+
+                        let h = parseInt(hNum, 10);
+                        if (ampm === 'PM' && h < 12) h += 12;
+                        if (ampm === 'AM' && h === 12) h = 0;
+                        const slotDate = new Date(dayDate);
+                        slotDate.setHours(h, parseInt(mins, 10), 0, 0);
+                        const isPast = slotDate.getTime() < Date.now();
+
+                        const isDisabled = isOutsideHours || isPast;
+                        const tooltipText = isPast
+                          ? 'Cannot book in the past'
+                          : isOutsideHours
+                            ? 'Closed / Outside store hours'
+                            : isBarber
+                              ? ''
+                              : `Click to book on ${dayDate.toLocaleDateString()} at ${slotTimeStr}`;
+
                         return (
                           <div
                             key={mins}
-                            className={`quarter-slot-cell ${isBarber ? '' : 'clickable-cell'}`}
-                            onClick={() => handleCellClick(dayDate, slotTimeStr)}
-                            title={isBarber ? '' : `Click to book on ${dayDate.toLocaleDateString()} at ${slotTimeStr}`}
+                            className={`quarter-slot-cell ${isBarber || isDisabled ? '' : 'clickable-cell'}`}
+                            onClick={() => { if (!isDisabled) handleCellClick(dayDate, slotTimeStr); }}
+                            style={isDisabled ? { background: '#f1f5f9', cursor: 'not-allowed', opacity: 0.6 } : undefined}
+                            title={tooltipText}
                           />
                         );
                       })}

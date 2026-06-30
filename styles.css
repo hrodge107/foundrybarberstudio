@@ -4532,12 +4532,20 @@ a {
     border: 1px solid #0f172a;
 }
 
+.status-pill.status-completed,
+.status-pill.status-finished {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
 .status-pill.status-cancelled {
-    background-color: #f8fafc;
-    color: #94a3b8;
-    border: 1px solid #e2e8f0;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
     text-decoration: line-through;
 }
+
 
 .expand-chevron-btn {
     background: transparent;

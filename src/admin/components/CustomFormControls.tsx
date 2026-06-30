@@ -122,6 +122,8 @@ interface CustomTimeSelectProps {
   onChange: (value: string) => void;
   required?: boolean;
   minTime?: string; // HH:mm format
+  disabled?: boolean;
+  error?: boolean;
 }
 
 export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
@@ -130,6 +132,8 @@ export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
   onChange,
   required = false,
   minTime,
+  disabled = false,
+  error = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -173,7 +177,8 @@ export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
       </label>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
         style={{
           position: 'relative',
           display: 'flex',
@@ -181,15 +186,15 @@ export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
           justifyContent: 'space-between',
           width: '100%',
           padding: '10px 12px',
-          background: '#ffffff',
+          background: disabled ? '#f1f5f9' : '#ffffff',
           borderRadius: '8px',
-          border: `1px solid ${isOpen ? '#18181b' : '#cbd5e1'}`,
-          boxShadow: isOpen ? '0 0 0 3px rgba(24, 24, 27, 0.08)' : 'none',
+          border: `1px solid ${error ? '#ef4444' : isOpen ? '#18181b' : '#cbd5e1'}`,
+          boxShadow: disabled ? 'none' : error && isOpen ? '0 0 0 3px rgba(239, 68, 68, 0.08)' : isOpen ? '0 0 0 3px rgba(24, 24, 27, 0.08)' : 'none',
           transition: 'all 0.15s ease-in-out',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
           fontFamily: 'inherit',
           fontSize: '0.9rem',
-          color: '#1e293b',
+          color: disabled ? '#94a3b8' : '#1e293b',
           fontWeight: 500,
           textAlign: 'left',
         }}

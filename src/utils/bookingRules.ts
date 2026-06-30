@@ -27,6 +27,13 @@ export interface ExistingAppointment {
   duration_minutes?: number;
 }
 
+export interface StoreHour {
+  day_of_week: string;
+  is_open: boolean;
+  open_time: string | null;
+  close_time: string | null;
+}
+
 /**
  * Rule 1: Occupied time block definition.
  * Two appointments on the SAME barber CONFLICT if their half-open intervals overlap:
@@ -50,7 +57,7 @@ export function doIntervalsOverlap(
 /**
  * Helper to parse time string "HH:mm:ss" or "HH:mm" into hours and minutes.
  */
-function parseTimeString(timeStr: string): { hours: number; minutes: number } {
+function parseTimeString(timeStr: string | null): { hours: number; minutes: number } {
   if (!timeStr) return { hours: 0, minutes: 0 };
   const parts = timeStr.split(':');
   return {
@@ -72,25 +79,24 @@ export function formatSlotTimeString(date: Date): string {
 
 /**
  * Rule 2 & Rule 6: Slot Visibility Generator
+ * Now intersected with Store Hours
  */
 export function generateAvailableSlots(
   barber: BarberSchedule,
   service: ServiceDetails,
   selectedDate: Date,
-  existingAppointments: ExistingAppointment[]
+  existingAppointments: ExistingAppointment[],
+  storeHours: StoreHour[]
 ): string[] {
-  // Rule 6 Duration guard
   if (!service || service.duration_minutes == null || service.duration_minutes <= 0) {
     console.warn("Service duration_minutes is 0 or null. Treating service as unavailable.", service);
     return [];
   }
 
-  // Rule 2.4: Active check
   if (!barber || !barber.is_active) {
     return [];
   }
 
-  // Rule 2.2 & Rule 6 Day matching normalization
   const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const dayAbbr = daysMap[selectedDate.getDay()];
   
@@ -99,18 +105,24 @@ export function generateAvailableSlots(
     return [];
   }
 
+  const storeDay = storeHours.find((s) => s.day_of_week === dayAbbr);
+  if (!storeDay || !storeDay.is_open || !storeDay.open_time || !storeDay.close_time) {
+    return []; // Store is closed this day
+  }
+
   const { hours: startH, minutes: startM } = parseTimeString(barber.shift_start);
   const { hours: endH, minutes: endM } = parseTimeString(barber.shift_end);
+  const { hours: storeOpenH, minutes: storeOpenM } = parseTimeString(storeDay.open_time);
+  const { hours: storeCloseH, minutes: storeCloseM } = parseTimeString(storeDay.close_time);
 
-  // Filter existing active appointments studio-wide (Pending & Confirmed block slots globally)
   const activeAppts = existingAppointments.filter((app) => {
     return app.status === 'Pending' || app.status === 'Confirmed';
   });
 
   const availableSlots: string[] = [];
 
-  // Determine shift windows (Rule 6 overnight shift handling)
   const isOvernight = endH < startH || (endH === startH && endM < startM);
+  const isStoreOvernight = storeCloseH < storeOpenH || (storeCloseH === storeOpenH && storeCloseM < storeOpenM);
 
   const baseYear = selectedDate.getFullYear();
   const baseMonth = selectedDate.getMonth();
@@ -119,31 +131,57 @@ export function generateAvailableSlots(
   let windows: { start: Date; end: Date }[] = [];
 
   if (!isOvernight) {
-    const shiftStart = new Date(baseYear, baseMonth, baseDay, startH, startM, 0, 0);
-    const shiftEnd = new Date(baseYear, baseMonth, baseDay, endH, endM, 0, 0);
-    windows.push({ start: shiftStart, end: shiftEnd });
+    windows.push({
+      start: new Date(baseYear, baseMonth, baseDay, startH, startM, 0, 0),
+      end: new Date(baseYear, baseMonth, baseDay, endH, endM, 0, 0)
+    });
   } else {
-    // Overnight shift: [shift_start, 24:00) today and [00:00, shift_end) next calendar day
-    const shiftStart = new Date(baseYear, baseMonth, baseDay, startH, startM, 0, 0);
-    const shiftEndToday = new Date(baseYear, baseMonth, baseDay, 24, 0, 0, 0);
-    
-    const shiftStartNext = new Date(baseYear, baseMonth, baseDay + 1, 0, 0, 0, 0);
-    const shiftEndNext = new Date(baseYear, baseMonth, baseDay + 1, endH, endM, 0, 0);
-
-    windows.push({ start: shiftStart, end: shiftEndToday });
-    windows.push({ start: shiftStartNext, end: shiftEndNext });
+    windows.push({
+      start: new Date(baseYear, baseMonth, baseDay, startH, startM, 0, 0),
+      end: new Date(baseYear, baseMonth, baseDay, 24, 0, 0, 0)
+    });
+    windows.push({
+      start: new Date(baseYear, baseMonth, baseDay + 1, 0, 0, 0, 0),
+      end: new Date(baseYear, baseMonth, baseDay + 1, endH, endM, 0, 0)
+    });
   }
 
-  // Iterate over shift windows generating slots every SLOT_STEP_MINUTES
-  for (const win of windows) {
+  let storeWindows: { start: Date; end: Date }[] = [];
+  if (!isStoreOvernight) {
+    storeWindows.push({
+      start: new Date(baseYear, baseMonth, baseDay, storeOpenH, storeOpenM, 0, 0),
+      end: new Date(baseYear, baseMonth, baseDay, storeCloseH, storeCloseM, 0, 0)
+    });
+  } else {
+    storeWindows.push({
+      start: new Date(baseYear, baseMonth, baseDay, storeOpenH, storeOpenM, 0, 0),
+      end: new Date(baseYear, baseMonth, baseDay, 24, 0, 0, 0)
+    });
+    storeWindows.push({
+      start: new Date(baseYear, baseMonth, baseDay + 1, 0, 0, 0, 0),
+      end: new Date(baseYear, baseMonth, baseDay + 1, storeCloseH, storeCloseM, 0, 0)
+    });
+  }
+
+  // Intersect windows
+  let validWindows: { start: Date; end: Date }[] = [];
+  for (const bw of windows) {
+    for (const sw of storeWindows) {
+      const maxStart = bw.start > sw.start ? bw.start : sw.start;
+      const minEnd = bw.end < sw.end ? bw.end : sw.end;
+      if (maxStart < minEnd) {
+        validWindows.push({ start: maxStart, end: minEnd });
+      }
+    }
+  }
+
+  for (const win of validWindows) {
     let curr = new Date(win.start);
     while (curr < win.end) {
       const slotStartMs = curr.getTime();
       const slotEndMs = slotStartMs + service.duration_minutes * 60 * 1000;
 
-      // Rule 2.1 & Rule 7: Must fit entirely within shift_end
       if (slotEndMs <= win.end.getTime()) {
-        // Rule 2.3: Check overlap with active appointments
         const hasConflict = activeAppts.some((app) => {
           const apptDuration = app.duration_minutes || app.service?.duration_minutes || 0;
           if (apptDuration <= 0) return false;
@@ -175,6 +213,50 @@ export async function validateSlotAvailability(
 
   const requestedStart = new Date(appointmentIsoString).getTime();
   const requestedEnd = requestedStart + serviceDurationMinutes * 60 * 1000;
+  const requestedDateObj = new Date(appointmentIsoString);
+
+  // 1. Check Store Hours globally first
+  const { data: storeHours, error: storeError } = await supabase.from('store_hours').select('*');
+  if (!storeError && storeHours && storeHours.length > 0) {
+    const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayAbbr = daysMap[requestedDateObj.getDay()];
+    const storeDay = storeHours.find((s) => s.day_of_week === dayAbbr);
+    
+    if (!storeDay || !storeDay.is_open || !storeDay.open_time || !storeDay.close_time) {
+      return false; // Store closed
+    }
+
+    const { hours: storeOpenH, minutes: storeOpenM } = parseTimeString(storeDay.open_time);
+    const { hours: storeCloseH, minutes: storeCloseM } = parseTimeString(storeDay.close_time);
+    const isStoreOvernight = storeCloseH < storeOpenH || (storeCloseH === storeOpenH && storeCloseM < storeOpenM);
+    
+    const baseYear = requestedDateObj.getFullYear();
+    const baseMonth = requestedDateObj.getMonth();
+    const baseDay = requestedDateObj.getDate();
+
+    let storeWindows: { start: Date; end: Date }[] = [];
+    if (!isStoreOvernight) {
+      storeWindows.push({
+        start: new Date(baseYear, baseMonth, baseDay, storeOpenH, storeOpenM, 0, 0),
+        end: new Date(baseYear, baseMonth, baseDay, storeCloseH, storeCloseM, 0, 0)
+      });
+    } else {
+      storeWindows.push({
+        start: new Date(baseYear, baseMonth, baseDay, storeOpenH, storeOpenM, 0, 0),
+        end: new Date(baseYear, baseMonth, baseDay, 24, 0, 0, 0)
+      });
+      storeWindows.push({
+        start: new Date(baseYear, baseMonth, baseDay + 1, 0, 0, 0, 0),
+        end: new Date(baseYear, baseMonth, baseDay + 1, storeCloseH, storeCloseM, 0, 0)
+      });
+    }
+
+    const fallsInStoreWindow = storeWindows.some(win => 
+      requestedStart >= win.start.getTime() && requestedEnd <= win.end.getTime()
+    );
+
+    if (!fallsInStoreWindow) return false;
+  }
 
   // Query appointments for barber in roughly a 24h window around requested date
   const minSearch = new Date(requestedStart - 24 * 60 * 60 * 1000).toISOString();
@@ -206,7 +288,6 @@ export async function validateSlotAvailability(
 
 /**
  * Rule 5: Post-accept conflict scan
- * Returns array of pending appointment IDs that overlap any confirmed appointment on the same barber.
  */
 export function scanPostAcceptConflicts(
   appointments: {

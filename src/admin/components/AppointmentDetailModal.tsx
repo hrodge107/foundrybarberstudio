@@ -131,7 +131,8 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
           systemUser?.username || 'Admin'
         );
         onUpdated({ id: appointment.id, status: newStatus });
-        if (newStatus === 'Completed') {
+        // ponytail: close modal on complete or cancel since these are removed from calendar
+        if (newStatus === 'Completed' || newStatus === 'Cancelled') {
           onClose();
         }
       } else if (confirmState.type === 'delete') {

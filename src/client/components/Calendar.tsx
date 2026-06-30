@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 
+import type { StoreHour } from '../../utils/bookingRules';
+
 interface CalendarProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
+  storeHours?: StoreHour[];
 }
 
-export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onSelectDate }) => {
+export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onSelectDate, storeHours = [] }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
 
   const year = currentMonth.getFullYear();
@@ -117,17 +120,27 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onSelectDate }
               const selectedClass = isSelected(day.date) ? ' calendar-selected-day' : '';
               const otherMonthClass = !day.isCurrentMonth ? ' calendar-other-month' : '';
               
+              const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+              const dayAbbr = daysMap[day.date.getDay()];
+              const storeDay = storeHours.find((s) => s.day_of_week === dayAbbr);
+              const isStoreClosed = storeDay ? !storeDay.is_open : false;
+              const closedClass = isStoreClosed ? ' calendar-closed-day' : '';
+              
               return (
                 <td 
                   key={day.key} 
-                  className={`calendar-day${todayClass}${selectedClass}${otherMonthClass}`}
+                  className={`calendar-day${todayClass}${selectedClass}${otherMonthClass}${closedClass}`}
+                  style={isStoreClosed ? { opacity: 0.3, pointerEvents: 'none', backgroundColor: '#222' } : {}}
                 >
                   <a 
                     href="#" 
                     onClick={(e) => {
                       e.preventDefault();
-                      onSelectDate(day.date);
+                      if (!isStoreClosed) {
+                        onSelectDate(day.date);
+                      }
                     }}
+                    style={isStoreClosed ? { cursor: 'not-allowed' } : {}}
                   >
                     {day.date.getDate()}
                   </a>

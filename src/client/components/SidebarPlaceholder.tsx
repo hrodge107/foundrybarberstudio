@@ -1,41 +1,120 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from '../../supabaseClient';
+
+interface StoreHour {
+  day_of_week: string;
+  is_open: boolean;
+  open_time: string | null;
+  close_time: string | null;
+}
+
+const DAYS_MAP = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const FULL_DAYS_MAP: { [key: string]: string } = {
+  Sun: 'Sunday',
+  Mon: 'Monday',
+  Tue: 'Tuesday',
+  Wed: 'Wednesday',
+  Thu: 'Thursday',
+  Fri: 'Friday',
+  Sat: 'Saturday',
+};
 
 export const SidebarPlaceholder: React.FC = () => {
   const [isHoursOpen, setIsHoursOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [storeHours, setStoreHours] = useState<StoreHour[]>([]);
 
-  const { isOpen, statusText, currentDayIndex } = useMemo(() => {
-    const now = new Date();
-    const day = now.getDay(); // 0 = Sun, 1 = Mon...
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const openMinutes = 10 * 60; // 10:00 AM
-
-    if (day === 0) {
-      return { isOpen: false, statusText: 'Closed · Opens Mon at 10 AM', currentDayIndex: 0 };
-    }
-
-    const closeMinutes = day === 6 ? 17 * 60 : 19 * 60; // 5 PM on Sat, 7 PM on Mon-Fri
-    const closeTimeStr = day === 6 ? '5 PM' : '7 PM';
-
-    if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
-      return { isOpen: true, statusText: `Open · Closes at ${closeTimeStr}`, currentDayIndex: day };
-    } else if (currentMinutes < openMinutes) {
-      return { isOpen: false, statusText: 'Closed · Opens at 10 AM', currentDayIndex: day };
-    } else {
-      const nextText = day === 6 ? 'Closed · Opens Mon at 10 AM' : 'Closed · Opens tomorrow at 10 AM';
-      return { isOpen: false, statusText: nextText, currentDayIndex: day };
-    }
+  useEffect(() => {
+    const fetchHours = async () => {
+      const { data } = await supabase.from('store_hours').select('*');
+      if (data) {
+        const order = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as any;
+        const sorted = [...data].sort((a, b) => order[a.day_of_week] - order[b.day_of_week]);
+        setStoreHours(sorted);
+      }
+    };
+    fetchHours();
   }, []);
 
-  const schedule = [
-    { day: 'Sunday', hours: 'Closed', index: 0 },
-    { day: 'Monday', hours: '10 AM - 7 PM', index: 1 },
-    { day: 'Tuesday', hours: '10 AM - 7 PM', index: 2 },
-    { day: 'Wednesday', hours: '10 AM - 7 PM', index: 3 },
-    { day: 'Thursday', hours: '10 AM - 7 PM', index: 4 },
-    { day: 'Friday', hours: '10 AM - 7 PM', index: 5 },
-    { day: 'Saturday', hours: '10 AM - 5 PM', index: 6 },
-  ];
+  const formatTimeString = (timeStr: string | null) => {
+    if (!timeStr) return '';
+    const [hStr, mStr] = timeStr.split(':');
+    const hours = parseInt(hStr, 10);
+    const minutes = parseInt(mStr, 10);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes > 0 ? `:${minutes.toString().padStart(2, '0')}` : '';
+    return `${displayHours}${displayMinutes} ${ampm}`;
+  };
+
+  const statusInfo = useMemo(() => {
+    if (storeHours.length === 0) {
+      return { isOpen: false, statusText: 'Loading hours...', currentDayIndex: new Date().getDay() };
+    }
+
+    const now = new Date();
+    const dayIndex = now.getDay();
+    const dayAbbr = DAYS_MAP[dayIndex];
+    const currentDayHours = storeHours.find((h) => h.day_of_week === dayAbbr);
+
+    const parseTimeToMinutes = (timeStr: string | null) => {
+      if (!timeStr) return 0;
+      const [h, m] = timeStr.split(':');
+      return parseInt(h, 10) * 60 + parseInt(m, 10);
+    };
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Default message helper
+    const getNextOpenText = (startDayOffset = 1): string => {
+      for (let i = 0; i < 7; i++) {
+        const checkIndex = (dayIndex + startDayOffset + i) % 7;
+        const checkDay = storeHours.find((h) => h.day_of_week === DAYS_MAP[checkIndex]);
+        if (checkDay && checkDay.is_open && checkDay.open_time) {
+          const formattedOpen = formatTimeString(checkDay.open_time);
+          const dayName = checkIndex === (dayIndex + 1) % 7 ? 'tomorrow' : FULL_DAYS_MAP[DAYS_MAP[checkIndex]];
+          return `Closed · Opens ${dayName} at ${formattedOpen}`;
+        }
+      }
+      return 'Closed';
+    };
+
+    if (!currentDayHours || !currentDayHours.is_open || !currentDayHours.open_time || !currentDayHours.close_time) {
+      return { isOpen: false, statusText: getNextOpenText(1), currentDayIndex: dayIndex };
+    }
+
+    const openMin = parseTimeToMinutes(currentDayHours.open_time);
+    const closeMin = parseTimeToMinutes(currentDayHours.close_time);
+
+    if (currentMinutes >= openMin && currentMinutes < closeMin) {
+      return {
+        isOpen: true,
+        statusText: `Open · Closes at ${formatTimeString(currentDayHours.close_time)}`,
+        currentDayIndex: dayIndex,
+      };
+    } else if (currentMinutes < openMin) {
+      return {
+        isOpen: false,
+        statusText: `Closed · Opens at ${formatTimeString(currentDayHours.open_time)}`,
+        currentDayIndex: dayIndex,
+      };
+    } else {
+      return { isOpen: false, statusText: getNextOpenText(1), currentDayIndex: dayIndex };
+    }
+  }, [storeHours]);
+
+  const schedule = useMemo(() => {
+    return storeHours.map((h, idx) => {
+      const hoursStr = h.is_open && h.open_time && h.close_time
+        ? `${formatTimeString(h.open_time)} - ${formatTimeString(h.close_time)}`
+        : 'Closed';
+      return {
+        day: FULL_DAYS_MAP[h.day_of_week] || h.day_of_week,
+        hours: hoursStr,
+        index: idx,
+      };
+    });
+  }, [storeHours]);
 
   return (
     <div className="sidebar-card">
@@ -52,8 +131,8 @@ export const SidebarPlaceholder: React.FC = () => {
           aria-expanded={isHoursOpen}
         >
           <i className="bi bi-clock"></i>
-          <span className={`status-text ${isOpen ? 'status-open' : 'status-closed'}`}>
-            {statusText}
+          <span className={`status-text ${statusInfo.isOpen ? 'status-open' : 'status-closed'}`}>
+            {statusInfo.statusText}
           </span>
           <i className={`bi ${isHoursOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
         </button>
@@ -64,7 +143,7 @@ export const SidebarPlaceholder: React.FC = () => {
               {schedule.map((item) => (
                 <div
                   key={item.day}
-                  className={`schedule-row ${item.index === currentDayIndex ? 'active-day' : ''}`}
+                  className={`schedule-row ${item.index === statusInfo.currentDayIndex ? 'active-day' : ''}`}
                 >
                   <span className="day-label">{item.day}</span>
                   <span className="hours-label">{item.hours}</span>
@@ -115,4 +194,5 @@ export const SidebarPlaceholder: React.FC = () => {
     </div>
   );
 };
+
 

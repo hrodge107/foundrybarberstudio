@@ -136,7 +136,18 @@ export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
   error = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleToggle = () => {
+    if (disabled) return;
+    if (!isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUp(spaceBelow < 210);
+    }
+    setIsOpen(!isOpen);
+  };
 
   // Generate 15-minute intervals from 06:00 to 23:00
   const timeSlots: { raw: string; label: string }[] = [];
@@ -178,7 +189,7 @@ export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleToggle}
         style={{
           position: 'relative',
           display: 'flex',
@@ -223,10 +234,12 @@ export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
         <div
           style={{
             position: 'absolute',
-            top: '100%',
+            top: openUp ? 'auto' : '100%',
+            bottom: openUp ? '100%' : 'auto',
             left: 0,
             right: 0,
-            marginTop: '4px',
+            marginTop: openUp ? '0' : '4px',
+            marginBottom: openUp ? '4px' : '0',
             maxHeight: '200px',
             overflowY: 'auto',
             background: '#ffffff',

@@ -293,6 +293,8 @@ function App() {
     phone: string;
     email: string;
     emailReminder: boolean;
+    paymentMethod?: 'Cash' | 'GCash';
+    paymentStatus?: 'Unpaid' | 'Paid' | 'Pending';
   }) => {
     return await clientSaveAppointment(bookingData, customerUser);
   };

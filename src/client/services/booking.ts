@@ -41,10 +41,12 @@ export async function saveAppointment(
     phone: string;
     email: string;
     emailReminder: boolean;
+    paymentMethod?: 'Cash' | 'GCash';
+    paymentStatus?: 'Unpaid' | 'Paid' | 'Pending';
   },
   currentCustomerUser: CustomerUser | null
 ): Promise<string | null> {
-  const { service, barber, date, time, fullName, phone, email } = bookingData;
+  const { service, barber, date, time, fullName, phone, email, paymentMethod, paymentStatus } = bookingData;
 
   const [timeStr, modifier] = time.split(' ');
   let [hoursStr, minutesStr] = timeStr.split(':');
@@ -126,6 +128,8 @@ export async function saveAppointment(
       service_id: service.id,
       appointment_date: combinedDateTimeIsoString,
       status: 'Pending',
+      payment_method: paymentMethod || 'Cash',
+      payment_status: paymentStatus || 'Unpaid',
     })
     .select('id')
     .single();

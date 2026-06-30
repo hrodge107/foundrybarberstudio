@@ -177,7 +177,7 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
           </div>
 
           <div className="detail-section">
-            <h4>Booking Schedule</h4>
+            <h4>Booking Schedule & Payment</h4>
             <div className="detail-grid">
               <div>
                 <span className="detail-label">Date & Time</span>
@@ -194,6 +194,24 @@ export const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
               <div>
                 <span className="detail-label">Duration</span>
                 <p className="detail-val">{appointment.service?.duration_minutes} mins</p>
+              </div>
+              <div>
+                <span className="detail-label">Payment Method</span>
+                <p className="detail-val">
+                  {appointment.payment_method === 'GCash' ? (
+                    <span className="payment-badge-online">ONLINE PAYMENT (GCash)</span>
+                  ) : (
+                    <span>Cash</span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <span className="detail-label">Payment Status</span>
+                <p className="detail-val">
+                  <span className={`payment-status-badge ${appointment.payment_status?.toLowerCase() || 'unpaid'}`}>
+                    {appointment.payment_status || 'Unpaid'}
+                  </span>
+                </p>
               </div>
             </div>
           </div>

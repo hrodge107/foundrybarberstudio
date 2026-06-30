@@ -11,6 +11,7 @@ import type { Service } from '../../../../shared/types/service';
 import type { Barber } from '../../../../shared/types/barber';
 import type { StoreHour } from '../../../../shared/types/store';
 import type { CustomerUser } from '../../../../shared/types/user';
+import { createGCashSource } from '../../../services/paymongo';
 import '../../../styles/BookingWizard.css';
 
 interface BookingWizardProps {
@@ -28,6 +29,8 @@ interface BookingWizardProps {
     phone: string;
     email: string;
     emailReminder: boolean;
+    paymentMethod?: 'Cash' | 'GCash';
+    paymentStatus?: 'Unpaid' | 'Paid' | 'Pending';
   }) => Promise<string | null>;
 }
 
@@ -208,10 +211,36 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
     }
   };
 
-  const handleFinalConfirm = async () => {
+  const handleFinalConfirm = async (paymentMethod: 'Cash' | 'GCash') => {
     if (!selectedService || !selectedStaff || !selectedTime) return;
 
     setShowConfirmation(false);
+
+    if (paymentMethod === 'GCash') {
+      setIsSaving(true);
+      try {
+        const bookingId = await proceedWithBooking('GCash', 'Pending', false);
+        if (bookingId) {
+          const checkoutUrl = await createGCashSource(Number(selectedService.price), bookingId);
+          window.location.href = checkoutUrl;
+        }
+      } catch (err: any) {
+        console.error(err);
+        alert(err.message || "Failed to initiate GCash payment");
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    await proceedWithBooking('Cash', 'Unpaid', true);
+  };
+
+  const proceedWithBooking = async (
+    method: 'Cash' | 'GCash',
+    status: 'Unpaid' | 'Paid' | 'Pending',
+    showSuccessModal: boolean = true
+  ): Promise<string | null> => {
+    if (!selectedService || !selectedStaff || !selectedTime) return null;
     setIsSaving(true);
     try {
       const bookingId = await onSaveAppointment({
@@ -223,25 +252,34 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
         phone: clientPhone,
         email: clientEmail,
         emailReminder: false,
+        paymentMethod: method,
+        paymentStatus: status,
       });
 
       if (bookingId) {
-        setCompletedBooking({
-          bookingId,
-          serviceName: selectedService.name,
-          barberName: selectedStaff.name,
-          date: selectedDate,
-          time: selectedTime,
-          price: Number(selectedService.price),
-        });
+        if (showSuccessModal) {
+          setCompletedBooking({
+            bookingId,
+            serviceName: selectedService.name,
+            barberName: selectedStaff.name,
+            date: selectedDate,
+            time: selectedTime,
+            price: Number(selectedService.price),
+          });
+        }
+        return bookingId;
       } else {
         alert("Failed to save appointment. Please try again.");
+        return null;
       }
     } catch (e) {
       console.error(e);
       alert("An error occurred while saving booking.");
+      return null;
     } finally {
-      setIsSaving(false);
+      if (showSuccessModal) {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -501,7 +539,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
               <div className="form-group-row">
                 <div className="form-group phone-group">
-                  <label htmlFor="txtPhone">Phone number *</label>
+                  <label htmlFor="txtPhone">Phone number</label>
                   <div className="phone-input-wrapper">
                     <input
                       type="text"
@@ -582,6 +620,8 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
           clientEmail={clientEmail}
         />
       )}
+
+
 
       {/* Completion Modal */}
       {completedBooking && (

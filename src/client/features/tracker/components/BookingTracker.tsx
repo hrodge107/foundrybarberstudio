@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../../../../shared/services/supabaseClient';
 import { getAppointmentByBookingId } from '../../../services/tracker';
 import type { FullAppointment } from '../../../../shared/types/appointment';
 import '../../../styles/BookingTracker.css';
@@ -27,6 +28,21 @@ export const BookingTracker: React.FC = () => {
           setIsLoading(true);
           setSearched(true);
           try {
+            const idNumber = parseInt(normalized.replace('FBS-', ''));
+            const dbId = idNumber - 100000;
+
+            if (hash.includes('payment=success')) {
+              await supabase
+                .from('appointments')
+                .update({ payment_status: 'Paid', status: 'Confirmed' })
+                .eq('id', dbId);
+            } else if (hash.includes('payment=failed')) {
+              await supabase
+                .from('appointments')
+                .update({ payment_status: 'Failed', status: 'Cancelled' })
+                .eq('id', dbId);
+            }
+
             const data = await getAppointmentByBookingId(normalized);
             setBooking(data);
           } catch (e) {

@@ -5,6 +5,8 @@ export interface Appointment {
   service_id: number;
   appointment_date: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  payment_method?: 'Cash' | 'GCash';
+  payment_status?: 'Unpaid' | 'Paid' | 'Pending';
   created_at?: string;
 }
 
@@ -21,6 +23,8 @@ export interface FullAppointment {
   id: number;
   appointment_date: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  payment_method?: 'Cash' | 'GCash';
+  payment_status?: 'Unpaid' | 'Paid' | 'Pending';
   customer: {
     id: number;
     name: string;
@@ -43,6 +47,8 @@ export interface AppointmentRecord {
   id: number;
   appointment_date: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  payment_method?: 'Cash' | 'GCash';
+  payment_status?: 'Unpaid' | 'Paid' | 'Pending';
   customer: {
     id: number;
     name: string;
@@ -67,6 +73,8 @@ export interface CustomerAppointment {
   id: number;
   appointment_date: string;
   status: string;
+  payment_method?: string;
+  payment_status?: string;
   barber: { name: string } | null;
   service: { name: string; price: number; duration_minutes: number; description: string | null } | null;
 }

@@ -429,3 +429,40 @@
     gap: 8px;
     text-decoration: none;
 }
+
+/* Payment Badges */
+.payment-badge-online {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.payment-status-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+}
+
+.payment-status-badge.paid {
+    background-color: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+.payment-status-badge.unpaid {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+.payment-status-badge.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}

@@ -4,7 +4,7 @@ import '../../../styles/ConfirmationModal.css';
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (paymentMethod: 'Cash' | 'GCash') => void;
   serviceName: string;
   barberName: string;
   selectedDate: Date;
@@ -28,6 +28,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   clientPhone,
   clientEmail,
 }) => {
+  const [paymentMethod, setPaymentMethod] = React.useState<'Cash' | 'GCash'>('Cash');
+
   if (!isOpen) return null;
 
   const formattedPrice = `₱${servicePrice.toFixed(2)}`;
@@ -63,6 +65,26 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               <span className="value highlight">{formattedPrice}</span>
             </div>
             <hr className="modal-divider" />
+            <div className="modal-info-item payment-selection-row">
+              <span className="label">Payment</span>
+              <div className="payment-options">
+                <button
+                  type="button"
+                  className={`payment-btn ${paymentMethod === 'Cash' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('Cash')}
+                >
+                  Cash
+                </button>
+                <button
+                  type="button"
+                  className={`payment-btn ${paymentMethod === 'GCash' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('GCash')}
+                >
+                  GCash
+                </button>
+              </div>
+            </div>
+            <hr className="modal-divider" />
             <div className="modal-info-item">
               <span className="label">Client Name</span>
               <span className="value">{clientName}</span>
@@ -83,7 +105,9 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         </div>
         <div className="modal-footer">
           <button type="button" className="btn-modal-cancel" onClick={onClose}>Cancel</button>
-          <button type="button" className="btn-modal-submit" onClick={onConfirm}>Finalize Booking</button>
+          <button type="button" className="btn-modal-submit" onClick={() => onConfirm(paymentMethod)}>
+            {paymentMethod === 'GCash' ? 'Proceed to Payment' : 'Finalize Booking'}
+          </button>
         </div>
       </div>
     </div>

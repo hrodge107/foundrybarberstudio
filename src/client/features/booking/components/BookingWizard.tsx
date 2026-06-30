@@ -501,7 +501,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
               <div className="form-group-row">
                 <div className="form-group phone-group">
-                  <label htmlFor="txtPhone">Phone number *</label>
+                  <label htmlFor="txtPhone">Phone number</label>
                   <div className="phone-input-wrapper">
                     <input
                       type="text"

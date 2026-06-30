@@ -4249,7 +4249,8 @@ a {
 
 .log-cat-icon.appointment,
 .log-cat-icon.barber,
-.log-cat-icon.service {
+.log-cat-icon.service,
+.log-cat-icon.schedule {
     background: #f1f5f9;
     color: #0f172a;
     border-color: #e2e8f0;

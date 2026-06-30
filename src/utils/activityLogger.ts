@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 export interface ActivityLogItem {
   id?: number;
   action_type: string;
-  category: 'appointment' | 'barber' | 'service';
+  category: 'appointment' | 'barber' | 'service' | 'schedule';
   description: string;
   performed_by?: string;
   created_at?: string;
@@ -11,7 +11,7 @@ export interface ActivityLogItem {
 
 export async function logActivity(
   actionType: string,
-  category: 'appointment' | 'barber' | 'service',
+  category: 'appointment' | 'barber' | 'service' | 'schedule',
   description: string,
   performedBy?: string
 ): Promise<void> {

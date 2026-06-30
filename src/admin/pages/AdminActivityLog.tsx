@@ -19,7 +19,7 @@ const FULL_MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const CATEGORIES = ['All', 'Appointments', 'Barbers', 'Services'] as const;
+const CATEGORIES = ['All', 'Appointments', 'Barbers', 'Services', 'Schedule'] as const;
 
 function CategoryGlidingTabs({
   selectedCategory,
@@ -243,6 +243,13 @@ export const AdminActivityLog: React.FC<AdminActivityLogProps> = ({ onLogout, sy
             <circle cx="6" cy="6" r="3" />
             <circle cx="6" cy="18" r="3" />
             <line x1="20" y1="4" x2="8.12" y2="15.88" />
+          </svg>
+        );
+      case 'schedule':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
           </svg>
         );
       default:

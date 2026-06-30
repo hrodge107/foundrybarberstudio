@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient';
 import type { SystemUser } from '../../App';
 import { AdminLayout } from '../components/AdminLayout';
 import { CustomTimeSelect } from '../components/CustomFormControls';
+import { logActivity } from '../../utils/activityLogger';
 
 interface AdminStoreHoursProps {
   onLogout: () => void;
@@ -18,6 +19,7 @@ export interface StoreHour {
 
 export const AdminStoreHours: React.FC<AdminStoreHoursProps> = ({ onLogout, systemUser }) => {
   const [storeHours, setStoreHours] = useState<StoreHour[]>([]);
+  const [originalStoreHours, setOriginalStoreHours] = useState<StoreHour[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -40,6 +42,7 @@ export const AdminStoreHours: React.FC<AdminStoreHoursProps> = ({ onLogout, syst
       const dayOrder = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 } as any;
       const sorted = [...data].sort((a, b) => dayOrder[a.day_of_week] - dayOrder[b.day_of_week]);
       setStoreHours(sorted);
+      setOriginalStoreHours(JSON.parse(JSON.stringify(sorted)));
     }
     setIsLoading(false);
   };
@@ -160,6 +163,33 @@ export const AdminStoreHours: React.FC<AdminStoreHoursProps> = ({ onLogout, syst
   const persistSave = async () => {
     setIsSaving(true);
     try {
+      const changes: string[] = [];
+      for (const h of storeHours) {
+        const orig = originalStoreHours.find((o) => o.day_of_week === h.day_of_week);
+        if (orig) {
+          const statusChanged = orig.is_open !== h.is_open;
+          const openChanged = orig.open_time !== h.open_time;
+          const closeChanged = orig.close_time !== h.close_time;
+
+          if (statusChanged || openChanged || closeChanged) {
+            const statusPart = statusChanged
+              ? `status changed from ${orig.is_open ? 'Open' : 'Closed'} to ${h.is_open ? 'Open' : 'Closed'}`
+              : '';
+            
+            let hoursPart = '';
+            if (h.is_open) {
+              if (openChanged || closeChanged) {
+                const prevHours = orig.is_open ? `${orig.open_time || 'None'}-${orig.close_time || 'None'}` : 'Closed';
+                hoursPart = `hours changed from ${prevHours} to ${h.open_time || 'None'}-${h.close_time || 'None'}`;
+              }
+            }
+
+            const parts = [statusPart, hoursPart].filter(Boolean);
+            changes.push(`${h.day_of_week}: ${parts.join(', ')}`);
+          }
+        }
+      }
+
       for (const h of storeHours) {
         const { error } = await supabase
           .from('store_hours')
@@ -171,6 +201,18 @@ export const AdminStoreHours: React.FC<AdminStoreHoursProps> = ({ onLogout, syst
           .eq('day_of_week', h.day_of_week);
         if (error) throw error;
       }
+
+      if (changes.length > 0) {
+        const description = `Updated store schedule: ${changes.join('; ')}`;
+        await logActivity(
+          'schedule_edit',
+          'schedule',
+          description,
+          systemUser?.username || 'Admin'
+        );
+        setOriginalStoreHours(JSON.parse(JSON.stringify(storeHours)));
+      }
+
       showToast('Store hours saved successfully');
     } catch (e) {
       console.error(e);

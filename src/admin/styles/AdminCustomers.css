@@ -1,0 +1,78 @@
+/* ==========================================================================
+   Admin Customer Management Page Styles
+   ========================================================================== */
+.customer-page-container {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.customer-sidebar {
+    width: 320px;
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+}
+
+.customer-list-scroll {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.customer-row-item {
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s ease;
+}
+
+.customer-row-item:hover {
+    background: #f8fafc;
+}
+
+.customer-row-item.active {
+    background: #f1f5f9;
+    border-left: 3px solid #0f172a;
+}
+
+.customer-main-panel {
+    flex: 1;
+    overflow-y: auto;
+    background: #f8fafc;
+}
+
+.customer-header-toolbar {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 20px 24px;
+}
+
+/* Transaction Card Pure CSS Spring Expansion */
+.transaction-card-spring {
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transaction-expand-grid {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.transaction-card-spring.expanded .transaction-expand-grid {
+    grid-template-rows: 1fr;
+}
+
+.transaction-expand-inner {
+    overflow: hidden;
+}
+
+.secondary-fade-text {
+    opacity: 0;
+    transition: opacity 0.2s ease 0s;
+}
+
+.transaction-card-spring.expanded .secondary-fade-text {
+    opacity: 1;
+    transition: opacity 0.4s ease 0.2s;
+}

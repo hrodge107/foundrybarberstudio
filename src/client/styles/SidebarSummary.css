@@ -1,0 +1,271 @@
+/* ==========================================================================
+   Summary Sidebar Styling
+   ========================================================================== */
+.sidebar-card {
+    background: var(--bg-surface);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-primary);
+    border-radius: 24px;
+    padding: 28px;
+    position: sticky;
+    top: 112px;
+    box-shadow: var(--shadow-md);
+}
+
+.studio-profile {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.sidebar-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-secondary);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.sidebar-studio-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.sidebar-studio-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.sidebar-divider {
+    border: none;
+    height: 1px;
+    background: var(--border-primary);
+    margin: 20px 0;
+}
+
+.studio-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.studio-hours-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hours-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 0;
+    transition: opacity 0.2s ease;
+}
+
+.hours-dropdown-trigger:hover {
+    opacity: 0.85;
+}
+
+.hours-dropdown-trigger i {
+    font-size: 0.95rem;
+}
+
+.status-text.status-open {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.status-text.status-closed {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.hours-dropdown-content {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.schedule-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.schedule-row.active-day {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.timezone-note {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+    margin-top: 14px;
+}
+
+.studio-location-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+}
+
+.location-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.location-icon {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.studio-contact-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.contact-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: opacity 0.2s ease;
+}
+
+.contact-dropdown-trigger:hover {
+    opacity: 0.85;
+}
+
+.contact-dropdown-content {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.contact-item i {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+/* Active Booking Summary */
+.summary-card {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.summary-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.summary-service-details {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.service-name-row {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.service-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.summary-item-name {
+    color: var(--text-primary);
+}
+
+.summary-item-meta {
+    color: var(--text-secondary);
+}
+
+.summary-item-price {
+    font-weight: 600;
+}
+
+.summary-item-sub {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 6px;
+}
+
+.summary-item-sub i {
+    color: var(--text-primary);
+}
+
+.summary-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+}
+
+.summary-total-price {
+    font-size: 1.2rem;
+}

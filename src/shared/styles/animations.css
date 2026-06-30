@@ -1,0 +1,75 @@
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+.animate-fade-in {
+    animation: fadeIn var(--transition-normal) forwards;
+}
+
+.animate-scale-up {
+    animation: scaleUp var(--transition-normal) forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleUp {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ==========================================================================
+   Toast Notification Animation
+   ========================================================================== */
+.toast-notification {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(140%) scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-secondary);
+    padding: 12px 24px;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: var(--glass-blur);
+    z-index: 9999;
+    transition: transform 0.55s cubic-bezier(0.18, 1.25, 0.4, 1), opacity 0.4s ease;
+}
+
+.toast-notification.show {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.toast-notification i {
+    color: #3ecf8e;
+    font-size: 1.1rem;
+}
+
+.nav-toggle {
+    display: none;
+}

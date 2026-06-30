@@ -1,0 +1,33 @@
+:root {
+    --bg-canvas: #0e0e10;
+    --bg-header: rgba(18, 18, 20, 0.85);
+    --bg-surface: rgba(22, 22, 26, 0.7);
+    --bg-card: rgba(30, 30, 36, 0.45);
+    --bg-card-hover: rgba(45, 45, 52, 0.6);
+    --text-primary: #f5f5f7;
+    --text-secondary: #9a9ab0;
+    --accent: #ffffff;
+    --accent-hover: #e8e8ed;
+    --accent-glow: rgba(255, 255, 255, 0.1);
+    --border-primary: rgba(255, 255, 255, 0.08);
+    --border-secondary: rgba(255, 255, 255, 0.15);
+    --border-focus: rgba(255, 255, 255, 0.5);
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 12px 36px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.8);
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    --glass-blur: blur(20px);
+    --transition-fast: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-normal: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Booking status semantics (muted tints over the dark glass canvas).
+       The base theme is monochrome; these give each status a readable hue. */
+    --status-pending: #f5a623;
+    --status-pending-bg: rgba(245, 166, 35, 0.12);
+    --status-confirmed: #4a9eff;
+    --status-confirmed-bg: rgba(74, 158, 255, 0.12);
+    --status-completed: #3ecf8e;
+    --status-completed-bg: rgba(62, 207, 142, 0.12);
+    --status-cancelled: #ff4d4f;
+    --status-cancelled-bg: rgba(255, 77, 79, 0.12);
+}

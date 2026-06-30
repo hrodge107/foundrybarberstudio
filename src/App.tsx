@@ -1,53 +1,29 @@
 import { useState, useEffect } from 'react';
-import { supabase } from './supabaseClient';
-import { BookingWizard } from './client/components/BookingWizard';
-import { BookingTracker } from './client/components/BookingTracker';
-import { TeamShowcase } from './client/components/TeamShowcase';
-import { ClientHeader } from './client/components/ClientHeader';
-import { CustomerLogin } from './client/pages/CustomerLogin';
-import { CustomerSignup } from './client/pages/CustomerSignup';
-import { CustomerProfile } from './client/pages/CustomerProfile';
-import { AdminLogin } from './admin/pages/AdminLogin';
-import { AdminDashboard } from './admin/pages/AdminDashboard';
-import { AdminAppointments } from './admin/pages/AdminAppointments';
-import { AdminServices } from './admin/pages/AdminServices';
-import { AdminBarbers } from './admin/pages/AdminBarbers';
-import { AdminCustomers } from './admin/pages/AdminCustomers';
-import { AdminProfile } from './admin/pages/AdminProfile';
-import { AdminActivityLog } from './admin/pages/AdminActivityLog';
-import { AdminReports } from './admin/pages/AdminReports';
-import { AdminStoreHours, type StoreHour } from './admin/pages/AdminStoreHours';
-import { logActivity } from './utils/activityLogger';
-import { validateSlotAvailability } from './utils/bookingRules';
-import '../styles.css';
+import { BookingWizard } from './client/features/booking/components/BookingWizard';
+import { BookingTracker } from './client/features/tracker/components/BookingTracker';
+import { TeamShowcase } from './client/features/booking/components/TeamShowcase';
+import { ClientHeader } from './client/features/booking/components/ClientHeader';
+import { CustomerLogin } from './client/features/auth/pages/CustomerLogin';
+import { CustomerSignup } from './client/features/auth/pages/CustomerSignup';
+import { CustomerProfile } from './client/features/profile/pages/CustomerProfile';
+import { AdminLogin } from './admin/features/auth/pages/AdminLogin';
+import { AdminDashboard } from './admin/features/dashboard/pages/AdminDashboard';
+import { AdminAppointments } from './admin/features/appointments/pages/AdminAppointments';
+import { AdminServices } from './admin/features/services/pages/AdminServices';
+import { AdminBarbers } from './admin/features/barbers/pages/AdminBarbers';
+import { AdminCustomers } from './admin/features/customers/pages/AdminCustomers';
+import { AdminProfile } from './admin/features/settings/pages/AdminProfile';
+import { AdminActivityLog } from './admin/features/activity/pages/AdminActivityLog';
+import { AdminReports } from './admin/features/reports/pages/AdminReports';
+import { AdminStoreHours } from './admin/features/settings/pages/AdminStoreHours';
+import { getServices, getBarbers, getStoreHours, saveAppointment as clientSaveAppointment } from './client/services/booking';
+import type { SystemUser, CustomerUser } from './shared/types/user';
+import type { Service } from './shared/types/service';
+import type { Barber } from './shared/types/barber';
+import type { StoreHour } from './shared/types/store';
+import './client/styles/Home.css';
+import './client/styles/Global.css';
 
-interface Service {
-  id: number;
-  name: string;
-  duration_minutes: number;
-  price: number;
-  description: string;
-  image_url: string;
-  category_name: string;
-}
-
-interface Barber {
-  id: number;
-  name: string;
-  is_active: boolean;
-  shift_start: string;
-  shift_end: string;
-  working_days: string[];
-  image_url?: string | null;
-  notes?: string | null;
-}
-
-interface CustomerUser {
-  id: number;
-  name: string;
-  phone: string;
-  email: string | null;
-}
 
 type ViewType =
   | 'booking'
@@ -65,13 +41,6 @@ type ViewType =
   | 'admin-reports'
   | 'admin-profile'
   | 'admin-store-hours';
-
-export interface SystemUser {
-  id: number;
-  username: string;
-  role: 'admin' | 'barber';
-  barber_id?: number | null;
-}
 
 function App() {
   const [view, setView] = useState<ViewType>('booking');
@@ -181,6 +150,9 @@ function App() {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
           setView('admin-login');
+        } else if (systemUser.role === 'barber') {
+          window.location.hash = '#/admin/dashboard';
+          setView('admin-dashboard');
         } else {
           setView('admin-activity');
         }
@@ -188,6 +160,9 @@ function App() {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
           setView('admin-login');
+        } else if (systemUser.role === 'barber') {
+          window.location.hash = '#/admin/dashboard';
+          setView('admin-dashboard');
         } else {
           setView('admin-reports');
         }
@@ -195,6 +170,9 @@ function App() {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
           setView('admin-login');
+        } else if (systemUser.role === 'barber') {
+          window.location.hash = '#/admin/dashboard';
+          setView('admin-dashboard');
         } else {
           setView('admin-store-hours');
         }
@@ -256,31 +234,20 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [systemUser, customerUser]);
 
-  // Fetch static data from Supabase
+  // Fetch static data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: servicesData, error: servicesErr } = await supabase
-          .from('services')
-          .select('id, name, duration_minutes, price, description, image_url, category_name');
-        if (servicesErr) throw servicesErr;
-        setServices(servicesData || []);
+        const servicesData = await getServices();
+        setServices(servicesData);
 
-        const { data: barbersData, error: barbersErr } = await supabase
-          .from('barbers')
-          .select('id, name, is_active, shift_start, shift_end, working_days, image_url, notes')
-          .eq('is_active', true);
-        if (barbersErr) throw barbersErr;
-        setBarbers(barbersData || []);
+        const barbersData = await getBarbers();
+        setBarbers(barbersData);
 
-        const { data: storeHoursData, error: storeHoursErr } = await supabase
-          .from('store_hours')
-          .select('*');
-        if (!storeHoursErr && storeHoursData) {
-          setStoreHours(storeHoursData);
-        }
+        const storeHoursData = await getStoreHours();
+        setStoreHours(storeHoursData);
       } catch (e) {
-        console.error('Error loading data from Supabase:', e);
+        console.error('Error loading initial data:', e);
       } finally {
         setIsLoading(false);
       }
@@ -327,152 +294,7 @@ function App() {
     email: string;
     emailReminder: boolean;
   }) => {
-    try {
-      const { service, barber, date, time, fullName, phone, email } = bookingData;
-
-      const [timeStr, modifier] = time.split(' ');
-      let [hoursStr, minutesStr] = timeStr.split(':');
-      let hours = parseInt(hoursStr);
-      const minutes = parseInt(minutesStr);
-
-      if (modifier === 'PM' && hours < 12) {
-        hours += 12;
-      }
-      if (modifier === 'AM' && hours === 12) {
-        hours = 0;
-      }
-
-      const appointmentDate = new Date(date);
-      appointmentDate.setHours(hours, minutes, 0, 0);
-      const combinedDateTimeIsoString = appointmentDate.toISOString();
-
-      // Rule 3.1: Server-side slot re-validation guard
-      const isSlotFree = await validateSlotAvailability(
-        supabase,
-        barber.id,
-        service.duration_minutes,
-        combinedDateTimeIsoString
-      );
-
-      if (!isSlotFree) {
-        alert("Sorry, that slot was just taken. Please choose another time.");
-        return null;
-      }
-
-      let customerId = customerUser?.id;
-
-      if (!customerId) {
-        let customer = null;
-        const cleanPhone = phone ? phone.trim() : '';
-        const cleanEmail = email ? email.trim() : '';
-
-        if (cleanPhone) {
-          const { data, error } = await supabase
-            .from('customers')
-            .select('id')
-            .eq('phone', cleanPhone)
-            .maybeSingle();
-          if (error) throw error;
-          customer = data;
-        } else if (cleanEmail) {
-          const { data, error } = await supabase
-            .from('customers')
-            .select('id')
-            .eq('email', cleanEmail)
-            .maybeSingle();
-          if (error) throw error;
-          customer = data;
-        }
-
-        customerId = customer?.id;
-
-        if (!customerId) {
-          const { data: newCustomer, error: insertErr } = await supabase
-            .from('customers')
-            .insert({
-              name: fullName.trim(),
-              phone: cleanPhone || null,
-              email: cleanEmail || null,
-            })
-            .select('id')
-            .single();
-
-          if (insertErr) throw insertErr;
-          customerId = newCustomer.id;
-        }
-      }
-
-      const { data: appointment, error: apptErr } = await supabase
-        .from('appointments')
-        .insert({
-          customer_id: customerId,
-          barber_id: barber.id,
-          service_id: service.id,
-          appointment_date: combinedDateTimeIsoString,
-          status: 'Pending',
-        })
-        .select('id')
-        .single();
-
-      if (apptErr) {
-        // Handle potential unique index collision or constraint error
-        if (apptErr.code === '23505') {
-          alert("Sorry, that slot was just taken. Please choose another time.");
-          return null;
-        }
-        throw apptErr;
-      }
-
-      const bookingId = `FBS-${100000 + Number(appointment.id)}`;
-      await logActivity('booking', 'appointment', `New booking ${bookingId} for ${service.name} with ${barber.name}`, fullName);
-      return bookingId;
-    } catch (e) {
-      console.error('Save appointment error:', e);
-      return null;
-    }
-  };
-
-  const trackBooking = async (searchId: string) => {
-    try {
-      const idSequence = parseInt(searchId.toUpperCase().replace('FBS-', '')) - 100000;
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          id,
-          appointment_date,
-          status,
-          customer:customers ( name, phone, email ),
-          barber:barbers ( name ),
-          service:services ( name, price )
-        `)
-        .eq('id', idSequence)
-        .single();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      const rawCustomer: any = Array.isArray(data.customer) ? data.customer[0] : data.customer;
-      const rawBarber: any = Array.isArray(data.barber) ? data.barber[0] : data.barber;
-      const rawService: any = Array.isArray(data.service) ? data.service[0] : data.service;
-
-      return {
-        id: data.id,
-        appointment_date: data.appointment_date,
-        status: data.status,
-        customer: rawCustomer
-          ? {
-            name: rawCustomer.name,
-            phone: rawCustomer.phone,
-            email: rawCustomer.email,
-          }
-          : null,
-        barber: rawBarber ? { name: rawBarber.name } : null,
-        service: rawService ? { name: rawService.name, price: Number(rawService.price) } : null,
-      } as any;
-    } catch (e) {
-      console.error('Track booking error:', e);
-      return null;
-    }
+    return await clientSaveAppointment(bookingData, customerUser);
   };
 
   const handleNavigate = (hash: string) => {
@@ -649,7 +471,7 @@ function App() {
               </section>
             </>
           ) : (
-            <BookingTracker onTrackBooking={trackBooking} />
+            <BookingTracker />
           )}
         </div>
       </main>

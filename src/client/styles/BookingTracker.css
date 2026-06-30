@@ -1,0 +1,271 @@
+/* ==========================================================================
+   Booking Tracker Page
+   ========================================================================== */
+.track-layout {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.track-header {
+    text-align: center;
+}
+
+.track-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+}
+
+.track-header p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Input card */
+.track-input-card {
+    padding: 28px;
+}
+
+.track-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
+}
+
+.track-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.track-submit {
+    display: flex;
+    align-items: flex-end;
+    min-height: 46px;
+    margin-top: 26px;
+}
+
+.track-submit .btn-confirm-submit {
+    padding: 14px 28px;
+    border-radius: 14px;
+}
+
+/* Result card */
+.track-result-card {
+    padding: 28px;
+}
+
+.result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+}
+
+.result-id {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.result-id-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.result-id-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* Status badge */
+.status-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+}
+
+.status-badge--pending {
+    color: var(--status-pending);
+    background: var(--status-pending-bg);
+    border-color: rgba(245, 166, 35, 0.3);
+}
+
+.status-badge--confirmed {
+    color: var(--status-confirmed);
+    background: var(--status-confirmed-bg);
+    border-color: rgba(74, 158, 255, 0.3);
+}
+
+.status-badge--completed {
+    color: var(--status-completed);
+    background: var(--status-completed-bg);
+    border-color: rgba(62, 207, 142, 0.3);
+}
+
+.status-badge--cancelled {
+    color: var(--status-cancelled);
+    background: var(--status-cancelled-bg);
+    border-color: rgba(255, 77, 79, 0.3);
+}
+
+/* Timeline */
+.track-timeline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 36px;
+    padding: 8px 0;
+}
+
+.timeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 92px;
+}
+
+.step-marker {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    transition: all var(--transition-normal);
+}
+
+.step-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.01em;
+    transition: color var(--transition-fast);
+}
+
+.timeline-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--border-primary);
+    margin: 23px 4px 0;
+    border-radius: 2px;
+    transition: background var(--transition-normal);
+}
+
+/* Active step: white filled marker + glow, matches calendar-selected-day language */
+.timeline-step.is-active .step-marker {
+    background: var(--accent);
+    color: #121212;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+.timeline-step.is-active .step-label {
+    color: var(--text-primary);
+}
+
+/* Completed step: status-green marker */
+.timeline-step.is-done .step-marker {
+    background: var(--status-completed);
+    color: #0e0e10;
+    border-color: var(--status-completed);
+}
+
+.timeline-step.is-done .step-label {
+    color: var(--text-primary);
+}
+
+.timeline-connector.is-filled {
+    background: var(--status-completed);
+}
+
+/* Cancelled terminal state: dim the whole timeline */
+.track-timeline.is-cancelled {
+    opacity: 0.45;
+}
+
+.timeline-step.is-cancelled .step-marker {
+    background: var(--status-cancelled-bg);
+    color: var(--status-cancelled);
+    border-color: rgba(255, 77, 79, 0.4);
+}
+
+/* Booking details card (reuses modal-details-card label/value language) */
+.booking-details-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.88rem;
+}
+
+.detail-row .label {
+    color: var(--text-secondary);
+}
+
+.detail-row .value {
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+.detail-row .value.highlight {
+    font-weight: 700;
+}
+
+/* Not found state */
+.not-found-state {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--status-cancelled);
+    background: var(--status-cancelled-bg);
+    border: 1px dashed rgba(255, 77, 79, 0.3);
+    border-radius: 16px;
+}
+
+.not-found-state i {
+    font-size: 1.8rem;
+    margin-bottom: 14px;
+    display: block;
+}
+
+.not-found-state p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.not-found-state strong {
+    color: var(--text-primary);
+}

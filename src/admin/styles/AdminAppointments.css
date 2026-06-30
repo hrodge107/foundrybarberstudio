@@ -1,0 +1,431 @@
+/* ==========================================
+   Admin Appointments Page & Gliding Tabs
+   ========================================== */
+.admin-appointments-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 32px;
+    background-color: #ffffff;
+    min-height: 100vh;
+}
+
+.admin-appointments-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+}
+
+/* Gliding Tabs */
+.gliding-tabs-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background-color: #f1f5f9;
+    padding: 4px;
+    border-radius: 9999px;
+    border: 1px solid #e2e8f0;
+}
+
+.gliding-tabs-indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    background-color: #0f172a;
+    border-radius: 9999px;
+    transition: left 0.4s cubic-bezier(0.65, 0, 0.35, 1), width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+    z-index: 1;
+}
+
+.gliding-tab-btn {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+    border: none;
+    padding: 8px 20px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    border-radius: 9999px;
+    transition: color 0.3s ease;
+}
+
+.gliding-tab-btn.active {
+    color: #ffffff;
+}
+
+.appointments-count-badge {
+    font-size: 0.88rem;
+    color: #64748b;
+    background-color: #f8fafc;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Appointments Cards Grid */
+.appointments-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.appointment-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.appointment-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.appointment-card.expanded {
+    border-color: #0f172a;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.appointment-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    gap: 16px;
+}
+
+.card-header-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.card-ref-badge {
+    font-family: monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    background-color: #f1f5f9;
+    color: #0f172a;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+}
+
+.card-customer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.customer-name {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.service-name {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.card-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.barber-assigned {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+}
+
+.meta-label {
+    color: #94a3b8;
+}
+
+.meta-val {
+    color: #334155;
+    font-weight: 600;
+}
+
+.appointment-datetime {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 0.82rem;
+}
+
+.date-str {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.time-str {
+    color: #64748b;
+}
+
+.status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.status-pill.status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.status-pill.status-confirmed {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #0f172a;
+}
+
+.status-pill.status-completed,
+.status-pill.status-finished {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.status-pill.status-cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    text-decoration: line-through;
+}
+
+
+.expand-chevron-btn {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+}
+
+.chevron-icon {
+    transition: transform 0.3s ease;
+}
+
+.chevron-icon.open {
+    transform: rotate(180deg);
+}
+
+/* Expanded Body Details */
+.appointment-card-body {
+    border-top: 1px solid #f1f5f9;
+    padding: 20px;
+    background-color: #fafafa;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.detail-val {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.price-val {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.contact-link {
+    color: #0f172a;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.card-actions-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.admin-btn {
+    padding: 10px 20px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-accept {
+    background-color: #0f172a;
+    color: #ffffff;
+    border: 1px solid #0f172a;
+}
+
+.btn-accept:hover:not(:disabled) {
+    background-color: #1e293b;
+}
+
+.btn-decline {
+    background-color: #ffffff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-decline:hover:not(:disabled) {
+    background-color: #f1f5f9;
+    border-color: #0f172a;
+}
+
+.admin-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Completion Modal Specific Styling */
+.completion-modal-content {
+    max-width: 500px;
+}
+
+.completion-modal-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-top: 28px;
+    position: relative;
+}
+
+.completion-modal-header .btn-close-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+.completion-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.completion-icon-wrapper i {
+    font-size: 2.5rem;
+    color: #22c55e;
+}
+
+.completion-subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.booking-id-banner {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.id-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.id-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+}
+
+.id-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+}
+
+.btn-copy-id {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-copy-id:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.completion-modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn-track-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}

@@ -89,8 +89,8 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
       setError('Duration must be greater than 0 minutes');
       return;
     }
-    if (price < 0 || price > 9999) {
-      setError('Cost must be between ₱0 and ₱9,999');
+    if (price < 1 || price > 9999) {
+      setError('Cost must be between ₱1 and ₱9,999');
       return;
     }
     if (!categoryName.trim()) {
@@ -216,9 +216,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                 <input
                   id="servicePriceInput"
                   type="number"
-                  min="0"
+                  min="1"
                   max="9999"
-                  step="10"
+                  step="any"
                   value={price}
                   onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
                   required

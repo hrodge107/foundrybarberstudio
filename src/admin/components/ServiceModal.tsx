@@ -226,25 +226,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="serviceCategorySelect">Category *</label>
-              <select
-                id="serviceCategorySelect"
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
-                required
-              >
-                {categories.length === 0 ? (
-                  <option value="Haircut">Haircut</option>
-                ) : (
-                  categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
+
           </div>
 
           <div className="admin-modal-actions" style={{ padding: '16px 0 0 0', background: 'transparent', borderTop: '1px solid #f1f5f9', marginTop: '12px' }}>

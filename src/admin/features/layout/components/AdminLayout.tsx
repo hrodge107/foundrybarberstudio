@@ -13,6 +13,7 @@ interface AdminLayoutProps {
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, systemUser, activeTab = 'calendar', children }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +38,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, systemUser, 
 
   const handleLogoutClick = () => {
     setIsProfileMenuOpen(false);
+    setIsLogoutModalOpen(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setIsLogoutModalOpen(false);
     onLogout();
     window.location.hash = '#/admin/login';
   };
@@ -206,6 +212,98 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, systemUser, 
       <div className="admin-main-viewport">
         {children}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="admin-modal-overlay" onClick={() => setIsLogoutModalOpen(false)}>
+          <div
+            className="admin-modal-card"
+            style={{
+              maxWidth: '400px',
+              borderRadius: '12px',
+              background: '#ffffff',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              border: '1px solid #e2e8f0',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="admin-modal-header"
+              style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Confirm Logout</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsLogoutModalOpen(false)}
+                aria-label="Close"
+                style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="admin-modal-body" style={{ padding: '24px' }}>
+              <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+                Are you sure you want to log out of the admin portal? Any unsaved changes may be lost.
+              </p>
+            </div>
+
+            <div
+              className="admin-modal-actions"
+              style={{
+                padding: '16px 24px',
+                background: '#f8fafc',
+                borderTop: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '12px',
+                borderBottomLeftRadius: '12px',
+                borderBottomRightRadius: '12px',
+              }}
+            >
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setIsLogoutModalOpen(false)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  color: '#475569',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                style={{
+                  background: '#ef4444',
+                  borderColor: '#ef4444',
+                  padding: '8px 18px',
+                  borderRadius: '6px',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

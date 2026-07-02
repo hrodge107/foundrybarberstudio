@@ -72,6 +72,7 @@ export async function createAppointmentAdmin(appointmentData: {
   barberId: number;
   appointmentDate: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  customerId?: number;
 }): Promise<void> {
   // Fetch service duration
   const { data: service, error: sErr } = await supabase
@@ -96,28 +97,32 @@ export async function createAppointmentAdmin(appointmentData: {
   }
 
   // Check or create customer
-  let { data: customer, error: custErr } = await supabase
-    .from('customers')
-    .select('id')
-    .eq('phone', appointmentData.customerPhone.trim())
-    .maybeSingle();
-
-  if (custErr) throw custErr;
-  let customerId = customer?.id;
+  let customerId = appointmentData.customerId;
 
   if (!customerId) {
-    const { data: newCustomer, error: newCustErr } = await supabase
+    let { data: customer, error: custErr } = await supabase
       .from('customers')
-      .insert({
-        name: appointmentData.customerName.trim(),
-        phone: appointmentData.customerPhone.trim(),
-        email: appointmentData.customerEmail ? appointmentData.customerEmail.trim() : null
-      })
       .select('id')
-      .single();
+      .eq('phone', appointmentData.customerPhone.trim())
+      .maybeSingle();
 
-    if (newCustErr) throw newCustErr;
-    customerId = newCustomer.id;
+    if (custErr) throw custErr;
+    customerId = customer?.id;
+
+    if (!customerId) {
+      const { data: newCustomer, error: newCustErr } = await supabase
+        .from('customers')
+        .insert({
+          name: appointmentData.customerName.trim(),
+          phone: appointmentData.customerPhone.trim(),
+          email: appointmentData.customerEmail ? appointmentData.customerEmail.trim() : null
+        })
+        .select('id')
+        .single();
+
+      if (newCustErr) throw newCustErr;
+      customerId = newCustomer.id;
+    }
   }
 
   // Insert appointment

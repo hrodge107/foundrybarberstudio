@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { logActivity } from '../../../../shared/services/activityLogger';
 import { getStoreHoursAdmin } from '../../../services/storeHours';
 import { createAppointmentAdmin } from '../../../services/appointments';
+import { getCustomers } from '../../../services/customers';
 import { CustomTimeSelect, CustomDatePicker } from '../../layout/components/CustomFormControls';
 import type { StoreHour } from '../../../../shared/types/store';
 import type { Service } from '../../../../shared/types/service';
 import type { Barber } from '../../../../shared/types/barber';
+import type { CustomerData } from '../../../../shared/types/user';
+import '../../../styles/AdminCustomers.css';
 
 interface CreateAppointmentModalProps {
   isOpen: boolean;
@@ -37,6 +40,51 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [storeHours, setStoreHours] = useState<StoreHour[]>([]);
+
+  // Registered Customer states
+  const [customers, setCustomers] = useState<CustomerData[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [isSelectCustomerOpen, setIsSelectCustomerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [customerFilterTab, setCustomerFilterTab] = useState<'all' | 'registered' | 'unregistered'>('all');
+  const [pillStyle, setPillStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const updatePillPosition = useCallback(() => {
+    const activeBtn = tabRefs.current[customerFilterTab];
+    if (activeBtn) {
+      setPillStyle({
+        left: activeBtn.offsetLeft,
+        width: activeBtn.offsetWidth,
+      });
+    }
+  }, [customerFilterTab]);
+
+  useEffect(() => {
+    if (isSelectCustomerOpen) {
+      updatePillPosition();
+      const timer = setTimeout(updatePillPosition, 50);
+      window.addEventListener('resize', updatePillPosition);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', updatePillPosition);
+      };
+    }
+  }, [isSelectCustomerOpen, updatePillPosition]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCustomers = async () => {
+        try {
+          const data = await getCustomers();
+          setCustomers(data);
+        } catch (e) {
+          console.error('Error fetching customers in create appointment modal:', e);
+        }
+      };
+      fetchCustomers();
+    }
+  }, [isOpen]);
 
   const timeToMins = (t: string | null) => {
     if (!t) return 0;
@@ -83,6 +131,10 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
       setCustomerName('');
       setCustomerPhone('');
       setCustomerEmail('');
+      setSelectedCustomerId(null);
+      setIsSelectCustomerOpen(false);
+      setSearchQuery('');
+      setCustomerFilterTab('all');
       setErrorMsg(null);
 
       const fetchStoreHours = async () => {
@@ -94,7 +146,7 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
         }
       };
       fetchStoreHours();
-      
+
       if (services.length > 0) setSelectedServiceId(services[0].id);
       if (barbers.length > 0) setSelectedBarberId(barbers[0].id);
 
@@ -120,18 +172,10 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
     }
   }, [isOpen, initialDate, initialTime, services, barbers, todayStr, currentTimeStr]);
 
-  if (!isOpen) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || !customerPhone.trim() || !selectedServiceId || !selectedBarberId) {
+    if (!customerName.trim() || !selectedServiceId || !selectedBarberId) {
       setErrorMsg('Please fill out all required fields.');
-      return;
-    }
-
-    const cleanPhone = customerPhone.trim();
-    if (!/^09\d{9}$/.test(cleanPhone)) {
-      setErrorMsg('Phone number must be exactly 11 digits starting with 09 (e.g., 09171234567).');
       return;
     }
 
@@ -184,7 +228,8 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
         serviceId: Number(selectedServiceId),
         barberId: Number(selectedBarberId),
         appointmentDate: isoDateTime,
-        status: status
+        status: status,
+        customerId: selectedCustomerId || undefined
       });
 
       const service = services.find((s) => s.id === Number(selectedServiceId));
@@ -244,6 +289,41 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
     }
   }
 
+  const filteredCustomers = useMemo(() => {
+    let list = customers;
+    if (customerFilterTab === 'registered') {
+      list = list.filter((c) => !!c.password_hash);
+    } else if (customerFilterTab === 'unregistered') {
+      list = list.filter((c) => !c.password_hash);
+    }
+
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase().trim();
+    return list.filter(
+      (c) =>
+        (c.name && c.name.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.toLowerCase().includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q))
+    );
+  }, [customers, customerFilterTab, searchQuery]);
+
+  const handleSelectCustomer = (c: CustomerData) => {
+    setSelectedCustomerId(c.id);
+    setCustomerName(c.name || '');
+    setCustomerPhone(c.phone || '');
+    setCustomerEmail(c.email || '');
+    setIsSelectCustomerOpen(false);
+  };
+
+  const handleClearSelectedCustomer = () => {
+    setSelectedCustomerId(null);
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerEmail('');
+  };
+
+  if (!isOpen) return null;
+
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
       <div className="admin-modal-card create-appointment-modal" onClick={(e) => e.stopPropagation()}>
@@ -256,7 +336,44 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
           {errorMsg && <div className="admin-form-error">{errorMsg}</div>}
           {storeHourError && <div className="admin-form-error">{storeHourError}</div>}
 
-          <div className="form-section-title">Customer Information</div>
+          <div className="form-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Customer Information</span>
+            {selectedCustomerId ? (
+              <button
+                type="button"
+                className="btn-link-action"
+                onClick={handleClearSelectedCustomer}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ef4444',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                Clear Selected
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn-link-action"
+                onClick={() => setIsSelectCustomerOpen(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#016bffff',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                Registered Customers
+              </button>
+            )}
+          </div>
 
           <div className="form-group-row">
             <div className="form-group">
@@ -267,16 +384,17 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
                 placeholder="Jose Rizal"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
+                disabled={!!selectedCustomerId}
               />
             </div>
             <div className="form-group">
-              <label>Customer Phone *</label>
+              <label>Customer Phone</label>
               <input
                 type="tel"
-                required
                 placeholder="e.g. 09171234567"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
+                disabled={!!selectedCustomerId}
               />
             </div>
           </div>
@@ -289,6 +407,7 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
                 placeholder="e.g. client@example.com"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
+                disabled={!!selectedCustomerId}
               />
             </div>
             <div className="form-group">
@@ -374,6 +493,166 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
           </div>
         </form>
       </div>
+
+      {isSelectCustomerOpen && (
+        <div
+          className="admin-modal-overlay"
+          style={{ zIndex: 1100 }}
+          onClick={() => setIsSelectCustomerOpen(false)}
+        >
+          <div
+            className="admin-modal-card customer-selector-modal"
+            style={{
+              maxWidth: '450px',
+              width: '90%',
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: 0,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="admin-modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid #cbd5e1' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>Select Customer</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsSelectCustomerOpen(false)}
+                style={{ fontSize: '1.4rem' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ padding: '16px 20px 8px 20px' }}>
+              <div className="customer-search-box" style={{ padding: 0, marginBottom: '12px' }}>
+                <div className="toolbar-search-box" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search name, phone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.875rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Segmented Tab Control Slider */}
+              <div
+                className="segmented-control-wrapper"
+                style={{
+                  position: 'relative',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1fr',
+                  background: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  padding: '3px',
+                }}
+              >
+                {/* Highlighted Sliding Pill */}
+                <div
+                  className="segmented-pill"
+                  style={{
+                    position: 'absolute',
+                    top: '3px',
+                    bottom: '3px',
+                    left: `${pillStyle.left}px`,
+                    width: `${pillStyle.width}px`,
+                    background: '#0f172a',
+                    borderRadius: '6px',
+                    transition: 'left 0.4s cubic-bezier(0.65, 0, 0.35, 1), width 0.4s cubic-bezier(0.65, 0, 0.35, 1)',
+                    zIndex: 1,
+                  }}
+                />
+
+                {(['all', 'registered', 'unregistered'] as const).map((tab) => {
+                  const isActive = customerFilterTab === tab;
+                  const labelMap = {
+                    all: 'All',
+                    registered: 'Registered',
+                    unregistered: 'Unregistered',
+                  };
+
+                  return (
+                    <button
+                      key={tab}
+                      ref={(el) => { if (el) tabRefs.current[tab] = el; }}
+                      type="button"
+                      onClick={() => setCustomerFilterTab(tab)}
+                      style={{
+                        position: 'relative',
+                        zIndex: 2,
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '6px 2px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: isActive ? '#ffffff' : '#0f172a',
+                        cursor: 'pointer',
+                        transition: 'color 0.4s cubic-bezier(0.65, 0, 0.35, 1)',
+                        textAlign: 'center',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {labelMap[tab]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div
+              className="customer-list-scroll"
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '8px 20px 20px 20px',
+                maxHeight: '400px',
+              }}
+            >
+              {filteredCustomers.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                  No customers found.
+                </div>
+              ) : (
+                filteredCustomers.map((c) => (
+                  <div
+                    key={c.id}
+                    className="customer-row-item"
+                    onClick={() => handleSelectCustomer(c)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: '4px',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid #f1f5f9',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>
+                        {c.name}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#64748b' }}>
+                        #{c.id}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: '#64748b' }}>{c.phone}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

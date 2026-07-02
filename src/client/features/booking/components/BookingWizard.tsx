@@ -141,6 +141,8 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
   const handleSelectService = (service: Service) => {
     setSelectedService(service);
     setStep('staff');
+    // ponytail: instantly scroll to services section so wizard is visible at top without smooth scrolling delay
+    document.getElementById('services')?.scrollIntoView({ behavior: 'auto', block: 'start' });
   };
 
   const handleSelectStaff = (barber: Barber) => {

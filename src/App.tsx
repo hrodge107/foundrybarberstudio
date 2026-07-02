@@ -401,7 +401,7 @@ function App() {
                     <div className="about-content">
                       <h2 className="section-title">About Us</h2>
                       <p className="about-desc">
-                        Foundry Barber Studio is a modern barbershop that offers professional grooming services for men, focusing on clean haircuts, fades, beard grooming, and a comfortable, stylish grooming experience. It is known for skilled barbers, attention to detail, and a relaxed studio-style atmosphere where clients can get a fresh, well-groomed look in a contemporary setting.
+                        The Foundry Barber Studio is a modern barbershop in Cabuyao, Laguna, specializing in precision haircuts, personalized hair consultations, and premium grooming services. We serve students, professionals, and gentlemen by providing hairstyles tailored to their face shape, hair type, and lifestyle. Every service is delivered with attention to detail, consistency, and client comfort in a clean and welcoming environment.
                       </p>
 
                       <div className="contact-block">

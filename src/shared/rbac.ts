@@ -1,6 +1,6 @@
 import type { SystemUser } from './types/user';
 
-export type AdminTab = 
+export type AdminTab =
   | 'calendar'
   | 'appointments'
   | 'services'
@@ -25,7 +25,6 @@ export const ROLE_PERMISSIONS: Record<SystemUser['role'], AdminTab[]> = {
   ],
   barber: [
     'calendar',
-    'appointments',
     'services',
     'barbers',
     'profile'

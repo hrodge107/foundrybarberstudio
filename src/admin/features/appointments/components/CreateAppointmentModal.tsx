@@ -44,6 +44,15 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
     return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
   };
 
+  const formatTimeStr = (t: string | null) => {
+    if (!t) return '';
+    const [hStr, mStr] = t.split(':');
+    let h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${mStr.padStart(2, '0')} ${ampm}`;
+  };
+
   const now = new Date();
   const todayY = now.getFullYear();
   const todayM = String(now.getMonth() + 1).padStart(2, '0');
@@ -137,6 +146,16 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
       return;
     }
 
+    const selectedBarber = barbers.find((b) => b.id === Number(selectedBarberId));
+    if (selectedBarber) {
+      const shiftStart = selectedBarber.shift_start.slice(0, 5);
+      const shiftEnd = selectedBarber.shift_end.slice(0, 5);
+      if (timeString < shiftStart || timeString >= shiftEnd) {
+        setErrorMsg(`Selected time is outside the barber's shift (${selectedBarber.name}: ${formatTimeStr(selectedBarber.shift_start)} - ${formatTimeStr(selectedBarber.shift_end)}).`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setErrorMsg(null);
 
@@ -209,20 +228,21 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
       const openMins = timeToMins(storeDay.open_time);
       const closeMins = timeToMins(storeDay.close_time);
       if (selectedMins < openMins || selectedMins >= closeMins) {
-        const formatTimeStr = (t: string | null) => {
-          if (!t) return '';
-          const [hStr, mStr] = t.split(':');
-          let h = parseInt(hStr, 10);
-          const ampm = h >= 12 ? 'PM' : 'AM';
-          h = h % 12 || 12;
-          return `${h}:${mStr.padStart(2, '0')} ${ampm}`;
-        };
         storeHourError = `Selected time is outside store hours (${formatTimeStr(storeDay.open_time)} - ${formatTimeStr(storeDay.close_time)}).`;
       }
     }
   }
 
-  const minTimeForSelect = dateString === todayStr ? currentTimeStr : undefined;
+  const selectedBarber = barbers.find((b) => b.id === Number(selectedBarberId));
+  const shiftStart = selectedBarber ? selectedBarber.shift_start.slice(0, 5) : undefined;
+  const shiftEnd = selectedBarber ? selectedBarber.shift_end.slice(0, 5) : undefined;
+
+  let minTimeForSelect = shiftStart;
+  if (dateString === todayStr) {
+    if (!minTimeForSelect || currentTimeStr > minTimeForSelect) {
+      minTimeForSelect = currentTimeStr;
+    }
+  }
 
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
@@ -340,6 +360,7 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
               onChange={(val: string) => setTimeString(val)}
               required
               minTime={minTimeForSelect}
+              maxTime={shiftEnd}
             />
           </div>
 

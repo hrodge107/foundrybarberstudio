@@ -123,6 +123,9 @@ function App() {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
           setView('admin-login');
+        } else if (!hasPermission(systemUser.role, 'appointments')) {
+          window.location.hash = '#/admin/dashboard';
+          setView('admin-dashboard');
         } else {
           setView('admin-appointments');
         }

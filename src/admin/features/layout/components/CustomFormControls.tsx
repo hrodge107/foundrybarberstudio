@@ -122,6 +122,7 @@ interface CustomTimeSelectProps {
   onChange: (value: string) => void;
   required?: boolean;
   minTime?: string; // HH:mm format
+  maxTime?: string; // HH:mm format
   disabled?: boolean;
   error?: boolean;
 }
@@ -132,6 +133,7 @@ export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
   onChange,
   required = false,
   minTime,
+  maxTime,
   disabled = false,
   error = false,
 }) => {
@@ -253,7 +255,10 @@ export const CustomTimeSelect: React.FC<CustomTimeSelectProps> = ({
         >
           {timeSlots.map((slot) => {
             const isSelected = slot.raw === selectedRaw;
-            const isDisabled = Boolean(minTime && slot.raw < minTime);
+            const isDisabled = Boolean(
+              (minTime && slot.raw < minTime) ||
+              (maxTime && slot.raw >= maxTime)
+            );
             return (
               <div
                 key={slot.raw}

@@ -493,7 +493,7 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onLogout, systemUser
                 </div>
                 <div className="kpi-value">{kpis.cancRate.toFixed(1)}%</div>
                 <div className={`kpi-delta ${kpis.cancRateDelta <= 0 ? 'positive' : 'negative'}`}>
-                  {kpis.cancRateDelta > 0 ? '↑' : '↓'} {Math.abs(kpis.cancRateDelta).toFixed(1)} pp vs prior period
+                  {kpis.cancRateDelta > 0 ? '↑' : '↓'} {Math.abs(kpis.cancRateDelta).toFixed(1)} vs prior period
                 </div>
               </div>
             </section>
@@ -684,7 +684,7 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onLogout, systemUser
               </div>
             </div>
 
-             {/* Main Visual Row 3: Bookings by Day of Week, Top Services & Barber Performance */}
+            {/* Main Visual Row 3: Bookings by Day of Week, Top Services & Barber Performance */}
             <div className="reports-row-split-3-col">
               {/* Day of Week */}
               <div className="report-panel">
@@ -767,11 +767,11 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onLogout, systemUser
                             <span className="barber-count">{b.count} cuts</span>
                           </div>
                           <div className="barber-bar-track">
-                            <div 
-                              className="barber-bar-fill" 
-                              style={{ 
+                            <div
+                              className="barber-bar-fill"
+                              style={{
                                 width: `${Math.max(6, barWidth)}%`,
-                                backgroundColor: barColor 
+                                backgroundColor: barColor
                               }}
                             ></div>
                           </div>

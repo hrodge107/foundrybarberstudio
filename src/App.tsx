@@ -445,13 +445,14 @@ function App() {
                 <div className="section-container">
                   <div className="section-header">
                     <h2 className="section-title">Address</h2>
-                    <p className="section-subtitle">Behind Pamantasan ng Cabuyao, Cabuyao City, Calabarzon 4024</p>
+                    <p className="section-subtitle">Blk 11, Homes, Lot 48 Katapatan Rd, Cabuyao City, 4025 Laguna
+                      <br />(Behind Pamantasan ng Cabuyao)</p>
                   </div>
 
                   <div className="map-wrapper">
                     <iframe
                       className="google-map-iframe"
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3867.728956972235!2d121.1219662758661!3d14.269986385966465!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d8c5208f654b%3A0xea8c792348505e60!2sPamantasan%20ng%20Cabuyao!5e0!3m2!1sen!2sph!4v1718791000000!5m2!1sen!2sph"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3868.141079361664!2d121.13086277586574!3d14.259386585976562!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d900178b6af1%3A0xe30cabb078f266a2!2sThe%20Foundry%20Barber%20Studio!5e0!3m2!1sen!2sph!4v1718800000000!5m2!1sen!2sph"
                       allowFullScreen={true}
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"

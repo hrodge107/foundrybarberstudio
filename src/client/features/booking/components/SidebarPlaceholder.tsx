@@ -158,8 +158,7 @@ export const SidebarPlaceholder: React.FC = () => {
         <div className="location-info">
           <i className="bi bi-geo-alt location-icon"></i>
           <div className="location-text">
-            <div>Behind Pamantasan ng Cabuyao</div>
-            <div>Cabuyao City, Calabarzon 4024</div>
+            <div>Blk 11, Homes, Lot 48 Katapatan Rd, Cabuyao City, 4025 Laguna</div>
           </div>
         </div>
 

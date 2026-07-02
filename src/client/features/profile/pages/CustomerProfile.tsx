@@ -539,9 +539,9 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({ customerUser, 
                   type="button"
                   className="btn-primary"
                   onClick={() => onNavigate('#services')}
-                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  style={{ padding: '8px 16px', fontSize: '0.85rem', color: '#f5f5f7', backgroundColor: '#232222ff', border: '0.5px solid #9a9ab0' }}
                 >
-                  + Book New
+                  <i className="bi bi-pencil" style={{ marginRight: '6px' }}></i> Book New
                 </button>
               </div>
 

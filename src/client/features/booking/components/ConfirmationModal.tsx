@@ -31,7 +31,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   if (!isOpen) return null;
 
   const formattedPrice = `₱${servicePrice.toFixed(2)}`;
-  
+
   const formatDate = (date: Date) => {
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' };
     return date.toLocaleDateString('en-US', options);
@@ -69,7 +69,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </div>
             <div className="modal-info-item">
               <span className="label">Phone Number</span>
-              <span className="value">{clientPhone ? `+63 ${clientPhone}` : 'N/A'}</span>
+              <span className="value">{clientPhone ? `${clientPhone}` : 'N/A'}</span>
             </div>
             <div className="modal-info-item">
               <span className="label">Email Address</span>
@@ -78,7 +78,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           </div>
           <div className="modal-warning">
             <i className="bi bi-shield-fill-check"></i>
-            <span>By confirming, you agree to our booking and cancellation policies.</span>
+            <span>By confirming, you agree to our booking policies.</span>
           </div>
         </div>
         <div className="modal-footer">

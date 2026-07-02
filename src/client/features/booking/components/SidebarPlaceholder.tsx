@@ -117,6 +117,7 @@ export const SidebarPlaceholder: React.FC = () => {
       <div className="studio-profile">
         <img src="/images/logo.jpg" alt="Foundry Barber Studio Logo" className="sidebar-logo" />
         <h2 className="sidebar-studio-name">Foundry Barber Studio</h2>
+        <p className="sidebar-studio-desc">Experience premium barbering and quality service in Cabuyao. Every service is delivered with attention to detail, consistency, and comfort in a clean and welcoming environment</p>
       </div>
 
       <div className="studio-hours-wrapper">
@@ -175,14 +176,22 @@ export const SidebarPlaceholder: React.FC = () => {
 
           {isContactOpen && (
             <div className="contact-dropdown-content animate-fade-in">
-              <div className="contact-item">
+              <a href="tel:09943543318" className="contact-item">
                 <i className="bi bi-telephone"></i>
                 <span>09943543318</span>
-              </div>
-              <div className="contact-item">
+              </a>
+              <a href="mailto:kesselgerhardt@gmail.com" className="contact-item">
                 <i className="bi bi-envelope"></i>
                 <span>kesselgerhardt@gmail.com</span>
-              </div>
+              </a>
+              <a href="https://www.facebook.com/profile.php?id=61590664191724" target="_blank" rel="noopener noreferrer" className="contact-item">
+                <i className="bi bi-facebook" style={{ color: '#1877F2' }}></i>
+                <span>Facebook</span>
+              </a>
+              <a href="https://www.instagram.com/thefoundrybarberstudio/" target="_blank" rel="noopener noreferrer" className="contact-item">
+                <i className="bi bi-instagram" style={{ color: '#E1306C' }}></i>
+                <span>Instagram</span>
+              </a>
             </div>
           )}
         </div>

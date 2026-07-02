@@ -3,6 +3,7 @@ import { AdminLayout } from '../../layout/components/AdminLayout';
 import { logActivity } from '../../../../shared/services/activityLogger';
 import { doIntervalsOverlap, scanPostAcceptConflicts } from '../../../../utils/bookingRules';
 import { getAppointments, updateAppointmentStatus, getActiveAppointmentsForConflictCheck } from '../../../services/appointments';
+import { ConfirmDeleteModal } from '../../../../shared/components/ConfirmDeleteModal';
 import type { SystemUser } from '../../../../shared/types/user';
 import type { AppointmentRecord } from '../../../../shared/types/appointment';
 import '../../../styles/AdminAppointments.css';
@@ -12,7 +13,7 @@ interface AdminAppointmentsProps {
   systemUser?: SystemUser | null;
 }
 
-type TabFilter = 'Pending' | 'Confirmed' | 'Cancelled' | 'All';
+type TabFilter = 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled' | 'All';
 
 function GlidingTabs({ 
   tabs, 
@@ -75,6 +76,70 @@ export const AdminAppointments: React.FC<AdminAppointmentsProps> = ({ onLogout, 
   } | null>(null);
   const [cardDecisions, setCardDecisions] = useState<Record<number, 'OK' | 'Delete'>>({});
   const [isSubmittingConflicts, setIsSubmittingConflicts] = useState<boolean>(false);
+
+  // Action confirmation state
+  const [confirmState, setConfirmState] = useState<{
+    appointment: AppointmentRecord;
+    targetStatus: 'Completed' | 'Cancelled';
+    title: string;
+    message: string;
+    confirmLabel: string;
+    confirmVariant: 'danger' | 'primary';
+  } | null>(null);
+
+  const requestComplete = (appt: AppointmentRecord) => {
+    setConfirmState({
+      appointment: appt,
+      targetStatus: 'Completed',
+      title: 'Complete Appointment',
+      message: 'Are you sure you want to mark this appointment as completed?',
+      confirmLabel: 'Complete',
+      confirmVariant: 'primary',
+    });
+  };
+
+  const requestCancel = (appt: AppointmentRecord) => {
+    setConfirmState({
+      appointment: appt,
+      targetStatus: 'Cancelled',
+      title: 'Cancel Appointment',
+      message: 'Are you sure you want to cancel this appointment?',
+      confirmLabel: 'Cancel',
+      confirmVariant: 'danger',
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmState) return;
+    const { appointment, targetStatus } = confirmState;
+    setActionLoadingId(appointment.id);
+    try {
+      await updateAppointmentStatus(appointment.id, targetStatus, systemUser?.id || null);
+
+      const refCode = `FBS-${100000 + appointment.id}`;
+      const custName = appointment.customer?.name || 'Customer';
+
+      const actType = targetStatus === 'Completed' ? 'appointment_completed' : 'appointment_cancelled';
+      const actDesc = targetStatus === 'Completed'
+        ? `Completed appointment ${refCode} for ${custName}`
+        : `Cancelled appointment ${refCode} for ${custName}`;
+
+      await logActivity(
+        actType,
+        'appointment',
+        actDesc,
+        systemUser?.username || 'admin'
+      );
+
+      setConfirmState(null);
+      await fetchAppointments();
+    } catch (err) {
+      console.error(`Failed to update status to ${targetStatus}:`, err);
+      alert(`Failed to update appointment: ${err}`);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const fetchAppointments = useCallback(async () => {
     setIsLoading(true);
@@ -286,7 +351,7 @@ export const AdminAppointments: React.FC<AdminAppointmentsProps> = ({ onLogout, 
 
         <div className="admin-appointments-controls">
           <GlidingTabs
-            tabs={['Pending', 'Confirmed', 'Cancelled', 'All']}
+            tabs={['Pending', 'Confirmed', 'Completed', 'Cancelled', 'All']}
             activeTab={activeFilter}
             onTabChange={setActiveFilter}
           />
@@ -409,6 +474,28 @@ export const AdminAppointments: React.FC<AdminAppointmentsProps> = ({ onLogout, 
                             onClick={() => handleAcceptBooking(app)}
                           >
                             {isActioning ? 'Processing...' : 'Accept Booking'}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Action buttons footer for Confirmed appointments */}
+                      {app.status === 'Confirmed' && (
+                        <div className="card-actions-row">
+                          <button
+                            type="button"
+                            className="admin-btn btn-decline"
+                            disabled={isActioning}
+                            onClick={() => requestCancel(app)}
+                          >
+                            Cancel Appointment
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-btn btn-accept"
+                            disabled={isActioning}
+                            onClick={() => requestComplete(app)}
+                          >
+                            Complete Appointment
                           </button>
                         </div>
                       )}
@@ -557,6 +644,17 @@ export const AdminAppointments: React.FC<AdminAppointmentsProps> = ({ onLogout, 
             </div>
           </div>
         )}
+
+        <ConfirmDeleteModal
+          isOpen={!!confirmState}
+          title={confirmState?.title || ''}
+          message={confirmState?.message || ''}
+          confirmLabel={confirmState?.confirmLabel || 'Confirm'}
+          confirmVariant={confirmState?.confirmVariant || 'danger'}
+          isDeleting={actionLoadingId === confirmState?.appointment?.id}
+          onConfirm={handleConfirmAction}
+          onClose={() => setConfirmState(null)}
+        />
       </div>
     </AdminLayout>
   );

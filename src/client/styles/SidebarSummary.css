@@ -197,11 +197,31 @@
     gap: 10px;
     font-size: 0.82rem;
     color: var(--text-secondary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.contact-item:hover {
+    color: var(--text-primary);
 }
 
 .contact-item i {
     color: var(--text-primary);
     font-size: 0.95rem;
+}
+
+.contact-dropdown-logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.contact-dropdown-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border-secondary);
+    object-fit: cover;
 }
 
 /* Active Booking Summary */

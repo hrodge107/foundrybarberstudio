@@ -534,7 +534,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
               <div className="booking-policies">
                 <h3>Booking Policy</h3>
-                <p>Enter at least a phone number or email for verification. Please arrive 5 minutes before your scheduled slot. Cancellations must be made at least 2 hours in advance. Thank you!</p>
+                <p>Enter at least a phone number or email for verification. Please arrive in time for your scheduled slot. We hold reservations for 10 minutes, after which your slot may be given to another client. Thank you!</p>
               </div>
 
               <div className="form-actions">

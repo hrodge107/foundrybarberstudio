@@ -12,11 +12,13 @@ export const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLoginSuccess, on
   const [identifier, setIdentifier] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [forgotMsg, setForgotMsg] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setForgotMsg('');
 
     if (!identifier.trim() || !password.trim()) {
       setError('Please enter your email/phone and password.');
@@ -56,6 +58,99 @@ export const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLoginSuccess, on
           Sign Up here
         </button>
       </div>
+
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        marginTop: '8px',
+        marginBottom: '4px'
+      }}>
+        <a
+          href="https://www.facebook.com/profile.php?id=61590664191724"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#9a9ab0',
+            fontSize: '0.8rem',
+            textDecoration: 'none',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.color = '#f5f5f7';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.color = '#9a9ab0';
+          }}
+        >
+          <i className="bi bi-facebook"></i> Facebook
+        </a>
+        <a
+          href="https://www.instagram.com/thefoundrybarberstudio/"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#9a9ab0',
+            fontSize: '0.8rem',
+            textDecoration: 'none',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.color = '#f5f5f7';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.color = '#9a9ab0';
+          }}
+        >
+          <i className="bi bi-instagram"></i> Instagram
+        </a>
+        <a
+          href="mailto:kesselgerhardt@gmail.com"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#9a9ab0',
+            fontSize: '0.8rem',
+            textDecoration: 'none',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.color = '#f5f5f7';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.color = '#9a9ab0';
+          }}
+        >
+          <i className="bi bi-envelope-fill"></i> Email
+        </a>
+      </div>
+
       <button
         type="button"
         className="auth-card-footer-link"
@@ -87,14 +182,50 @@ export const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLoginSuccess, on
           />
         </div>
 
-        <PasswordInput
-          id="customer-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter your password"
-          required
-          disabled={isLoading}
-        />
+        <div className="form-group" style={{ marginBottom: '4px' }}>
+          <PasswordInput
+            id="customer-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+            disabled={isLoading}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+            <button
+              type="button"
+              onClick={() => setForgotMsg('Contact Admin for password reset')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#9a9ab0',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                padding: '4px 0',
+              }}
+            >
+              Forgot Password?
+            </button>
+          </div>
+        </div>
+
+        {forgotMsg && (
+          <div style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            color: '#f5f5f7',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            fontSize: '0.88rem',
+            display: 'flex',
+            alignItems: 'center',
+            marginTop: '8px',
+          }}>
+            <i className="bi bi-info-circle-fill" style={{ marginRight: '8px', color: '#f5a623' }}></i>
+            <span>{forgotMsg}</span>
+          </div>
+        )}
 
         <button type="submit" className="btn-auth-submit" disabled={isLoading}>
           {isLoading ? 'Authenticating...' : 'Sign In'}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { SystemUser } from '../../../../shared/types/user';
+import { hasPermission } from '../../../../shared/rbac';
 import '../../../styles/AdminLayout.css';
 import '../../../styles/Global.css';
 
@@ -104,20 +105,22 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, systemUser, 
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </button>
-            <button 
-              type="button" 
-              className={`rail-icon-btn ${activeTab === 'customers' ? 'active' : ''}`}
-              title="Customers"
-              onClick={() => { window.location.hash = '#/admin/customers'; }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                <circle cx="12" cy="8" r="2" />
-                <path d="M15 13a3 3 0 0 0-6 0" />
-              </svg>
-            </button>
-            {systemUser?.role !== 'barber' && (
+            {hasPermission(systemUser?.role, 'customers') && (
+              <button 
+                type="button" 
+                className={`rail-icon-btn ${activeTab === 'customers' ? 'active' : ''}`}
+                title="Customers"
+                onClick={() => { window.location.hash = '#/admin/customers'; }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  <circle cx="12" cy="8" r="2" />
+                  <path d="M15 13a3 3 0 0 0-6 0" />
+                </svg>
+              </button>
+            )}
+            {hasPermission(systemUser?.role, 'activity') && (
               <button 
                 type="button" 
                 className={`rail-icon-btn ${activeTab === 'activity' ? 'active' : ''}`}
@@ -129,7 +132,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, systemUser, 
                 </svg>
               </button>
             )}
-            {systemUser?.role !== 'barber' && (
+            {hasPermission(systemUser?.role, 'reports') && (
               <button 
                 type="button" 
                 className={`rail-icon-btn ${activeTab === 'reports' ? 'active' : ''}`}
@@ -143,7 +146,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, systemUser, 
                 </svg>
               </button>
             )}
-            {systemUser?.role !== 'barber' && (
+            {hasPermission(systemUser?.role, 'settings') && (
               <button 
                 type="button" 
                 className={`rail-icon-btn ${activeTab === 'settings' ? 'active' : ''}`}

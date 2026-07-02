@@ -18,6 +18,7 @@ import { AdminReports } from './admin/features/reports/pages/AdminReports';
 import { AdminStoreHours } from './admin/features/settings/pages/AdminStoreHours';
 import { getServices, getBarbers, getStoreHours, saveAppointment as clientSaveAppointment } from './client/services/booking';
 import type { SystemUser, CustomerUser } from './shared/types/user';
+import { hasPermission } from './shared/rbac';
 import type { Service } from './shared/types/service';
 import type { Barber } from './shared/types/barber';
 import type { StoreHour } from './shared/types/store';
@@ -143,6 +144,9 @@ function App() {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
           setView('admin-login');
+        } else if (!hasPermission(systemUser.role, 'customers')) {
+          window.location.hash = '#/admin/dashboard';
+          setView('admin-dashboard');
         } else {
           setView('admin-customers');
         }
@@ -150,7 +154,7 @@ function App() {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
           setView('admin-login');
-        } else if (systemUser.role === 'barber') {
+        } else if (!hasPermission(systemUser.role, 'activity')) {
           window.location.hash = '#/admin/dashboard';
           setView('admin-dashboard');
         } else {
@@ -160,7 +164,7 @@ function App() {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
           setView('admin-login');
-        } else if (systemUser.role === 'barber') {
+        } else if (!hasPermission(systemUser.role, 'reports')) {
           window.location.hash = '#/admin/dashboard';
           setView('admin-dashboard');
         } else {
@@ -170,7 +174,7 @@ function App() {
         if (!systemUser) {
           window.location.hash = '#/admin/login';
           setView('admin-login');
-        } else if (systemUser.role === 'barber') {
+        } else if (!hasPermission(systemUser.role, 'settings')) {
           window.location.hash = '#/admin/dashboard';
           setView('admin-dashboard');
         } else {
@@ -401,7 +405,10 @@ function App() {
                       </p>
 
                       <div className="contact-block">
-                        <h3 className="contact-title">Contact Us</h3>
+                        <div className="contact-header-with-logo">
+                          <img src="/images/logo.jpg" alt="Foundry Barber Studio Logo" className="contact-logo" />
+                          <h3 className="contact-title" style={{ margin: 0 }}>Contact Us</h3>
+                        </div>
                         <div className="contact-links">
                           <a href="tel:09943543318" className="contact-link-item">
                             <i className="bi bi-telephone-fill"></i>
@@ -410,6 +417,14 @@ function App() {
                           <a href="mailto:kesselgerhardt@gmail.com" className="contact-link-item">
                             <i className="bi bi-envelope-fill"></i>
                             <span>kesselgerhardt@gmail.com</span>
+                          </a>
+                          <a href="https://www.facebook.com/profile.php?id=61590664191724" target="_blank" rel="noopener noreferrer" className="contact-link-item">
+                            <i className="bi bi-facebook" style={{ color: '#1877F2' }}></i>
+                            <span>Facebook</span>
+                          </a>
+                          <a href="https://www.instagram.com/thefoundrybarberstudio/" target="_blank" rel="noopener noreferrer" className="contact-link-item">
+                            <i className="bi bi-instagram" style={{ color: '#E1306C' }}></i>
+                            <span>Instagram</span>
                           </a>
                         </div>
                       </div>

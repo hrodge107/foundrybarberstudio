@@ -253,12 +253,13 @@
 .calendar-title {
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #ffffff;
     height: 40px;
     text-align: center;
 }
 
 .calendar-title td {
+    color: #ffffff;
     padding-bottom: 12px;
 }
 

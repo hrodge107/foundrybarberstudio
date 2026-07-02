@@ -1,4 +1,5 @@
 import { supabase } from '../../shared/services/supabaseClient';
+import { validateSlotAvailability } from '../../utils/bookingRules';
 import type { AppointmentRecord, FullAppointment } from '../../shared/types/appointment';
 
 export async function getAppointments(): Promise<AppointmentRecord[]> {
@@ -72,6 +73,28 @@ export async function createAppointmentAdmin(appointmentData: {
   appointmentDate: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
 }): Promise<void> {
+  // Fetch service duration
+  const { data: service, error: sErr } = await supabase
+    .from('services')
+    .select('duration_minutes')
+    .eq('id', appointmentData.serviceId)
+    .single();
+
+  if (sErr) throw sErr;
+  if (!service) throw new Error('Service not found.');
+
+  // Validate availability
+  const isAvailable = await validateSlotAvailability(
+    supabase,
+    appointmentData.barberId,
+    service.duration_minutes,
+    appointmentData.appointmentDate
+  );
+
+  if (!isAvailable) {
+    throw new Error('This slot is already occupied for the selected barber.');
+  }
+
   // Check or create customer
   let { data: customer, error: custErr } = await supabase
     .from('customers')

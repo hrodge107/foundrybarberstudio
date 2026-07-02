@@ -215,8 +215,8 @@ export const AdminAppointments: React.FC<AdminAppointmentsProps> = ({ onLogout, 
       const conflicts: AppointmentRecord[] = [];
 
       for (const other of otherAppts) {
-        if (other.barber?.id !== appointment.barber.id) continue;
-        const otherDur = other.service?.duration_minutes || 0;
+        const serviceObj = Array.isArray(other.service) ? other.service[0] : other.service;
+        const otherDur = serviceObj?.duration_minutes || 0;
         if (otherDur <= 0) continue;
         if (doIntervalsOverlap(targetStart, targetDuration, other.appointment_date, otherDur)) {
           conflicts.push(other);

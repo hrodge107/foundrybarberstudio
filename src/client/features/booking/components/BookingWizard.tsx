@@ -95,30 +95,32 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
   const [existingAppointments, setExistingAppointments] = useState<ExistingAppointment[]>([]);
 
   const fetchBarberAppointments = useCallback(async () => {
-    if (!selectedStaff) return;
     try {
       const { data, error } = await supabase
         .from('appointments')
         .select('id, barber_id, appointment_date, status, service:services(duration_minutes)')
-        .eq('barber_id', selectedStaff.id)
         .in('status', ['Pending', 'Confirmed']);
 
       if (error) {
         console.error('Error fetching barber appointments:', error);
       } else if (data) {
-        const formatted: ExistingAppointment[] = data.map((a: any) => ({
-          id: a.id,
-          barber_id: a.barber_id,
-          appointment_date: a.appointment_date,
-          status: a.status as 'Pending' | 'Confirmed',
-          duration_minutes: (a.service as any)?.duration_minutes || 0,
-        }));
+        const formatted: ExistingAppointment[] = data.map((a: any) => {
+          const serviceObj = Array.isArray(a.service) ? a.service[0] : a.service;
+          return {
+            id: a.id,
+            barber_id: a.barber_id,
+            appointment_date: a.appointment_date,
+            status: a.status as 'Pending' | 'Confirmed',
+            duration_minutes: serviceObj?.duration_minutes || 0,
+            service: serviceObj ? { duration_minutes: serviceObj.duration_minutes } : null
+          };
+        });
         setExistingAppointments(formatted);
       }
     } catch (err) {
       console.error('Failed fetching appointments for slots:', err);
     }
-  }, [selectedStaff]);
+  }, []);
 
   useEffect(() => {
     if (step === 'time' && selectedStaff) {

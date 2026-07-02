@@ -38,8 +38,20 @@
 
 .customer-main-panel {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     background: #f8fafc;
+}
+
+.customer-detail-viewport {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.customer-sections-wrapper {
+    flex: 1;
+    overflow-y: auto;
 }
 
 .customer-header-toolbar {

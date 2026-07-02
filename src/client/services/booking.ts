@@ -59,8 +59,12 @@ export async function saveAppointment(
   }
 
   const appointmentDate = new Date(date);
-  appointmentDate.setHours(hours, minutes, 0, 0);
-  const combinedDateTimeIsoString = appointmentDate.toISOString();
+  const y = appointmentDate.getFullYear();
+  const m = String(appointmentDate.getMonth() + 1).padStart(2, '0');
+  const d = String(appointmentDate.getDate()).padStart(2, '0');
+  const h = String(hours).padStart(2, '0');
+  const min = String(minutes).padStart(2, '0');
+  const combinedDateTimeIsoString = `${y}-${m}-${d}T${h}:${min}:00+08:00`;
 
   // Re-validate availability
   const isSlotFree = await validateSlotAvailability(

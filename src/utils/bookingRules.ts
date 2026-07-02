@@ -116,7 +116,7 @@ export function generateAvailableSlots(
   const { hours: storeCloseH, minutes: storeCloseM } = parseTimeString(storeDay.close_time);
 
   const activeAppts = existingAppointments.filter((app) => {
-    return (app.status === 'Pending' || app.status === 'Confirmed') && app.barber_id === barber.id;
+    return app.status === 'Pending' || app.status === 'Confirmed';
   });
 
   const availableSlots: string[] = [];
@@ -190,7 +190,21 @@ export function generateAvailableSlots(
         const hasConflict = activeAppts.some((app) => {
           const apptDuration = app.duration_minutes || app.service?.duration_minutes || 0;
           if (apptDuration <= 0) return false;
-          return doIntervalsOverlap(slotStartMs, service.duration_minutes, app.appointment_date, apptDuration);
+
+          // Align database UTC/GMT+8 timestamp to local browser timezone:
+          const apptDateObj = new Date(app.appointment_date);
+          const manilaMs = apptDateObj.getTime() + 8 * 60 * 60 * 1000;
+          const manilaDate = new Date(manilaMs);
+          const localAlignedTime = new Date(
+            manilaDate.getUTCFullYear(),
+            manilaDate.getUTCMonth(),
+            manilaDate.getUTCDate(),
+            manilaDate.getUTCHours(),
+            manilaDate.getUTCMinutes(),
+            0, 0
+          ).getTime();
+
+          return doIntervalsOverlap(slotStartMs, service.duration_minutes, localAlignedTime, apptDuration);
         });
 
         if (!hasConflict) {
@@ -210,7 +224,7 @@ export function generateAvailableSlots(
  */
 export async function validateSlotAvailability(
   supabase: SupabaseClient,
-  barberId: number,
+  _barberId: number,
   serviceDurationMinutes: number,
   appointmentIsoString: string
 ): Promise<boolean> {
@@ -272,7 +286,6 @@ export async function validateSlotAvailability(
   const { data: appts, error } = await supabase
     .from('appointments')
     .select('id, barber_id, appointment_date, status, service:services(duration_minutes)')
-    .eq('barber_id', barberId)
     .in('status', ['Pending', 'Confirmed'])
     .gte('appointment_date', minSearch)
     .lte('appointment_date', maxSearch);
@@ -316,7 +329,6 @@ export function scanPostAcceptConflicts(
     if (pDur <= 0) continue;
 
     const hasOverlap = confirmed.some((c) => {
-      if (p.barber_id !== c.barber_id) return false;
       const cDur = c.service?.duration_minutes || 0;
       if (cDur <= 0) return false;
       return doIntervalsOverlap(p.appointment_date, pDur, c.appointment_date, cDur);

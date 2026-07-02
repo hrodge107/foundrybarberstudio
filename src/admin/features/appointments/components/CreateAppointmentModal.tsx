@@ -217,7 +217,9 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
         return;
       }
 
-      const isoDateTime = scheduledDate.toISOString();
+      const h = String(hours).padStart(2, '0');
+      const min = String(minutes).padStart(2, '0');
+      const isoDateTime = `${dateString}T${h}:${min}:00+08:00`;
 
       // Check or create customer
       // Create appointment

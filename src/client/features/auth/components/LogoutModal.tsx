@@ -1,4 +1,6 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
+import '../../../styles/ConfirmationModal.css';
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -13,7 +15,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="modal-overlay active" style={{ zIndex: 1100 }}>
       <div className="modal-content animate-scale-up" style={{ maxWidth: '400px', textAlign: 'center' }}>
         <div className="modal-header" style={{ justifyContent: 'center', position: 'relative' }}>
@@ -47,6 +49,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
